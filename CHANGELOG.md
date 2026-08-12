@@ -1,0 +1,13 @@
+# Changelog
+
+## 0.1.0
+
+- Initial public release — vendor-agnostic AI chat surfaces for Expo / React Native
+- Pluggable `AiTransport` with default OpenAI-compatible Chat Completions streaming
+- `createMockTransport` for offline demos
+- Surfaces: `full-page`, `floating`, `modal`, `bottom-sheet` (optional `@gorhom/bottom-sheet` peer)
+- Editable theme, i18n strings, render slots, lifecycle callbacks
+- Chat UX: stop generation, regenerate, copy, typing indicator, reasoning badge
+- Optional peers: `react-native-markdown-display`, `expo-clipboard`
+- Headless recipe documented in README
+- Source-first package (TypeScript shipped for Metro)

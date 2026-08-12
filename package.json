@@ -1,0 +1,110 @@
+{
+  "name": "expo-ai-assistant",
+  "version": "0.1.0",
+  "description": "Surface-first AI chat kit for Expo and React Native — pluggable transport (OpenAI-compatible default), full-page, floating, modal, and optional bottom-sheet.",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "react-native": "src/index.ts",
+  "source": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "react-native": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./full-page": {
+      "types": "./src/full-page/index.ts",
+      "react-native": "./src/full-page/index.ts",
+      "default": "./src/full-page/index.ts"
+    },
+    "./floating": {
+      "types": "./src/floating/index.ts",
+      "react-native": "./src/floating/index.ts",
+      "default": "./src/floating/index.ts"
+    },
+    "./bottom-sheet": {
+      "types": "./src/bottom-sheet/index.ts",
+      "react-native": "./src/bottom-sheet/index.ts",
+      "default": "./src/bottom-sheet/index.ts"
+    },
+    "./modal": {
+      "types": "./src/modal/index.ts",
+      "react-native": "./src/modal/index.ts",
+      "default": "./src/modal/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "LICENSE",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "verify:gorhom": "node scripts/verify-gorhom-isolation.js",
+    "lint": "echo \"No linter configured yet\"",
+    "example": "npm --prefix example start",
+    "example:go": "npm --prefix example run start:go",
+    "example:ios": "npm --prefix example run ios",
+    "example:android": "npm --prefix example run android"
+  },
+  "keywords": [
+    "expo",
+    "react-native",
+    "ai",
+    "assistant",
+    "chat",
+    "streaming",
+    "bottom-sheet",
+    "floating",
+    "modal",
+    "openai"
+  ],
+  "author": "melihmuratpesmen",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/melihmuratpesmen/expo-ai-assistant.git"
+  },
+  "bugs": {
+    "url": "https://github.com/melihmuratpesmen/expo-ai-assistant/issues"
+  },
+  "homepage": "https://github.com/melihmuratpesmen/expo-ai-assistant#readme",
+  "peerDependencies": {
+    "@expo/vector-icons": ">=14.0.0",
+    "@gorhom/bottom-sheet": ">=5.0.0",
+    "expo-clipboard": ">=7.0.0",
+    "react": ">=18.0.0",
+    "react-native": ">=0.73.0",
+    "react-native-gesture-handler": ">=2.14.0",
+    "react-native-markdown-display": ">=7.0.0",
+    "react-native-reanimated": ">=3.6.0",
+    "react-native-safe-area-context": ">=4.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@gorhom/bottom-sheet": {
+      "optional": true
+    },
+    "expo-clipboard": {
+      "optional": true
+    },
+    "react-native-markdown-display": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "@gorhom/bottom-sheet": "^5.2.6",
+    "@types/react": "~19.1.0",
+    "react": "19.1.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "~2.28.0",
+    "react-native-reanimated": "~4.1.1",
+    "react-native-safe-area-context": "~5.6.0",
+    "typescript": "~5.9.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

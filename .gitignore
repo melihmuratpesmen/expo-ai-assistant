@@ -1,0 +1,6 @@
+node_modules/
+.DS_Store
+*.log
+example/node_modules/
+.expo/
+dist/

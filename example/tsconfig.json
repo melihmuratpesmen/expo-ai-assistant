@@ -1,0 +1,14 @@
+{
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "expo-ai-assistant": ["../src/index.ts"],
+      "expo-ai-assistant/full-page": ["../src/full-page/index.ts"],
+      "expo-ai-assistant/floating": ["../src/floating/index.ts"],
+      "expo-ai-assistant/bottom-sheet": ["../src/bottom-sheet/index.ts"],
+      "expo-ai-assistant/modal": ["../src/modal/index.ts"]
+    }
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}

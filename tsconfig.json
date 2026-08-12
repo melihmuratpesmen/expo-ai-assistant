@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "lib": ["ESNext"],
+    "jsx": "react-native",
+    "strict": true,
+    "moduleResolution": "bundler",
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "declaration": true,
+    "declarationMap": true,
+    "baseUrl": ".",
+    "paths": {
+      "expo-ai-assistant": ["./src/index.ts"],
+      "expo-ai-assistant/full-page": ["./src/full-page/index.ts"],
+      "expo-ai-assistant/floating": ["./src/floating/index.ts"],
+      "expo-ai-assistant/bottom-sheet": ["./src/bottom-sheet/index.ts"],
+      "expo-ai-assistant/modal": ["./src/modal/index.ts"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "example", "lib"]
+}
