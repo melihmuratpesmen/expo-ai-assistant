@@ -1,6 +1,6 @@
 {
   "name": "expo-ai-assistant",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Surface-first AI chat kit for Expo and React Native — pluggable transport (OpenAI-compatible default), full-page, floating, modal, and optional bottom-sheet.",
   "main": "src/index.ts",
   "types": "src/index.ts",
@@ -47,7 +47,8 @@
     "example": "npm --prefix example start",
     "example:go": "npm --prefix example run start:go",
     "example:ios": "npm --prefix example run ios",
-    "example:android": "npm --prefix example run android"
+    "example:android": "npm --prefix example run android",
+    "example:publish": "npm --prefix example run publish:go"
   },
   "keywords": [
     "expo",

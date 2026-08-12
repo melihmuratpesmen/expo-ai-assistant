@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.1
+
+- Hosted Expo Go demo (SDK 54) with README QR — channel `preview` on `@melihpesmen/expo-ai-assistant-example`
+
 ## 0.1.0
 
 - Initial public release — vendor-agnostic AI chat surfaces for Expo / React Native

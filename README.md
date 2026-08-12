@@ -4,10 +4,39 @@ Surface-first AI chat kit for **Expo** and **React Native**.
 
 Bring your own backend. Ship full-page, floating, modal, or bottom-sheet chat UIs without locking into a single vendor.
 
+[![npm](https://img.shields.io/npm/v/expo-ai-assistant.svg)](https://www.npmjs.com/package/expo-ai-assistant)
 [![license](https://img.shields.io/npm/l/expo-ai-assistant.svg)](./LICENSE)
+[![Expo Go](https://img.shields.io/badge/Expo%20Go-SDK%2054-000020?logo=expo)](#try-in-expo-go)
 [![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6?logo=typescript&logoColor=white)](./src/index.ts)
 
 `0.x` — public API may evolve; see [changelog](./CHANGELOG.md).
+
+---
+
+## Try in Expo Go
+
+Scan with **Expo Go (SDK 54)** — offline mock transport, no API key needed.
+
+<p align="center">
+  <a href="https://expo.dev/@melihpesmen/expo-ai-assistant-example">
+    <img
+      src="https://qr.expo.dev/eas-update?projectId=645b533c-f76d-4c2d-a725-a7420b210ce7&runtimeVersion=exposdk%3A54.0.0&channel=preview"
+      alt="Scan to open expo-ai-assistant demo in Expo Go"
+      width="220"
+      height="220"
+    />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://expo.dev/@melihpesmen/expo-ai-assistant-example"><b>Open on expo.dev</b></a>
+  ·
+  <code>exp://u.expo.dev/645b533c-f76d-4c2d-a725-a7420b210ce7?runtime-version=exposdk%3A54.0.0&amp;channel-name=preview</code>
+</p>
+
+Demo tabs: full page · floating · bottom sheet · modal · history.
+
+Local playground: [example/README.md](./example/README.md).
 
 ---
 
@@ -222,6 +251,10 @@ export default function App() {
 
 ## Example
 
+Quick try: [scan the Expo Go QR](#try-in-expo-go) above.
+
+Run locally:
+
 ```bash
 npm install
 npm --prefix example install
@@ -230,12 +263,19 @@ npm run example:go
 
 Defaults to `createMockTransport()`. Set `EXPO_PUBLIC_OPENAI_API_KEY` for live OpenAI-compatible chat.
 
+Republish the hosted Expo Go demo (maintainers):
+
+```bash
+npm run example:publish
+```
+
 ---
 
 ## Docs
 
 - [Surfaces](./docs/SURFACES.md)
 - [Deferred](./docs/DEFERRED.md)
+- [Example / Expo Go](./example/README.md)
 - [Changelog](./CHANGELOG.md)
 
 ## License

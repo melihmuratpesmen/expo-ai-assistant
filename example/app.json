@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "expo-ai-assistant-example",
+    "name": "AI Assistant Demo",
     "slug": "expo-ai-assistant-example",
+    "owner": "melihpesmen",
     "version": "1.0.0",
     "orientation": "default",
     "icon": "./assets/icon.png",
@@ -19,6 +20,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "645b533c-f76d-4c2d-a725-a7420b210ce7"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "sdkVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/645b533c-f76d-4c2d-a725-a7420b210ce7"
     }
   }
 }
