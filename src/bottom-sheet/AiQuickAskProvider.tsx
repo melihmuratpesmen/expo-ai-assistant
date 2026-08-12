@@ -119,6 +119,10 @@ export function AiQuickAskProvider({
             backdropComponent={renderBackdrop}
             backgroundStyle={{ backgroundColor: theme.colors.bg.DEFAULT }}
             handleIndicatorStyle={{ backgroundColor: theme.colors.text[300] }}
+            keyboardBehavior="interactive"
+            keyboardBlurBehavior="restore"
+            android_keyboardInputMode="adjustResize"
+            enableDynamicSizing={false}
           >
             <BottomSheetView style={styles.sheetContent}>
               <View style={[styles.header, { borderBottomColor: theme.colors.border.DEFAULT }]}>

@@ -4,6 +4,8 @@ Playground for `expo-ai-assistant`. Targets **Expo SDK 54** so it opens in the c
 
 Offline by default via `createMockTransport()` — no API key required.
 
+Try **“Show a table”** / **“summary”** suggestions to see tool cards + `AiDataTable`. Use the **Dark / Light** toggle in the chrome.
+
 ## Try without cloning
 
 Scan with **Expo Go (SDK 54)**:

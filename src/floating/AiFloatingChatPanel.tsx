@@ -15,6 +15,7 @@ import { AiChatInput } from '../components/AiChatInput';
 import { AiText } from '../components/AiText';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
+import { useKeyboardBottomInset } from '../hooks/useKeyboardBottomInset';
 import { spacing, radius } from '../theme/tokens';
 import type { AiChatMessage } from '../types/aiChat';
 import type { AiButtonPoint } from './aiButtonPosition';
@@ -57,6 +58,7 @@ export function AiFloatingChatPanel({
   const listRef = useRef<FlatList<AiChatMessage>>(null);
   const sentInitialRef = useRef(false);
   const lastAssistantId = [...messages].reverse().find(m => m.role === 'assistant')?.id;
+  const keyboardHeight = useKeyboardBottomInset(visible);
 
   useEffect(() => {
     if (!visible) {
@@ -92,7 +94,14 @@ export function AiFloatingChatPanel({
     Math.max(anchor.x + AI_BUTTON_SIZE - PANEL_WIDTH, spacing[4]),
     screen.width - PANEL_WIDTH - spacing[4]
   );
-  const top = Math.max(Math.min(anchor.y - PANEL_HEIGHT - 12, screen.height - PANEL_HEIGHT - 24), 48);
+  const preferredTop = Math.max(
+    Math.min(anchor.y - PANEL_HEIGHT - 12, screen.height - PANEL_HEIGHT - 24),
+    48
+  );
+  const top =
+    keyboardHeight > 0
+      ? Math.max(48, Math.min(preferredTop, screen.height - PANEL_HEIGHT - keyboardHeight - 12))
+      : preferredTop;
 
   return (
     <View

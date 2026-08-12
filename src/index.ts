@@ -6,6 +6,10 @@ export { useAiCallbacks, useAiSlots } from './provider/slots';
 export { useAiChat } from './hooks/useAiChat';
 export type { UseAiChatOptions, UseAiChatResult } from './hooks/useAiChat';
 export { useAiConversations } from './hooks/useAiConversations';
+export {
+  useKeyboardBottomInset,
+  chatInputBottomPadding,
+} from './hooks/useKeyboardBottomInset';
 
 export {
   createOpenAICompatibleTransport,

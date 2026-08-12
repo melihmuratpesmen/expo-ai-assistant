@@ -261,13 +261,17 @@ npm --prefix example install
 npm run example:go
 ```
 
-Defaults to `createMockTransport()`. Set `EXPO_PUBLIC_OPENAI_API_KEY` for live OpenAI-compatible chat.
+Defaults to `createMockTransport()` with **tool / table demos** — try the “Show a table” suggestion or ask for a summary. Toggle **Dark / Light** in the example chrome. Set `EXPO_PUBLIC_OPENAI_API_KEY` for live OpenAI-compatible chat (tool streaming still requires a custom `AiTransport` or MyExamy-style backend).
 
 Republish the hosted Expo Go demo (maintainers):
 
 ```bash
 npm run example:publish
 ```
+
+### Tool calling & tables
+
+**UI is included:** `AiFunctionCallCard`, `AiFrontendDataRenderer`, `AiDataTable`, content blocks. Wire them by emitting `onToolStart` / `onToolComplete` from your `AiTransport` (mock transport does this for demo prompts). OpenAI-compatible default transport is text-only for now — see [docs/DEFERRED.md](./docs/DEFERRED.md).
 
 ---
 

@@ -17,6 +17,12 @@ export const DEFAULT_SUGGESTIONS: import('../types/aiContext').AiSuggestion[] = 
     icon: 'sparkles',
   },
   {
+    id: 'help-table',
+    label: 'Show a table',
+    prompt: 'Show students as a table',
+    icon: 'grid-outline',
+  },
+  {
     id: 'help-summary',
     label: 'Quick summary',
     prompt: 'Give me a short summary for today.',

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.2
+
+- Keyboard-aware input padding on full-page + modal (`useKeyboardBottomInset`); bottom-sheet uses gorhom `keyboardBehavior="interactive"`
+- Example app dark / light toggle via `colorScheme`
+- Mock transport tool demos: table (`Show students as a table`) + key/value overview
+
 ## 0.1.1
 
 - Hosted Expo Go demo (SDK 54) with README QR — channel `preview` on `@melihpesmen/expo-ai-assistant-example`

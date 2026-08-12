@@ -162,6 +162,7 @@ export const AiQuickAskInputBar: React.FC = () => {
         styles.inputBar,
         {
           backgroundColor: theme.colors.bg.DEFAULT,
+          // Sheet uses gorhom `keyboardBehavior="interactive"` for lift.
           paddingBottom: Math.max(insets.bottom, spacing[2]),
           borderTopColor: theme.colors.border.DEFAULT,
         },

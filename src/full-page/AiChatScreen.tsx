@@ -13,6 +13,10 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAiChat } from '../hooks/useAiChat';
+import {
+  chatInputBottomPadding,
+  useKeyboardBottomInset,
+} from '../hooks/useKeyboardBottomInset';
 import { AiMessageBubble } from '../components/AiMessageBubble';
 import { AiSuggestionGrid } from '../components/AiSuggestionGrid';
 import { AiChatInput } from '../components/AiChatInput';
@@ -46,6 +50,7 @@ export function AiChatScreen({
   const strings = useAiStrings();
   const slots = useAiSlots();
   const insets = useSafeAreaInsets();
+  const keyboardHeight = useKeyboardBottomInset();
   const title = titleProp ?? strings.assistantTitle;
   const {
     messages,
@@ -59,6 +64,8 @@ export function AiChatScreen({
   } = useAiChat({ conversationId });
 
   const listRef = useRef<FlatList<AiChatMessage>>(null);
+  const inputPaddingBottom =
+    chatInputBottomPadding(keyboardHeight, insets.bottom, spacing[2]) + bottomInset;
 
   const scrollToEnd = useCallback(() => {
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
@@ -195,7 +202,7 @@ export function AiChatScreen({
         <AiText style={[styles.error, { color: theme.colors.error.DEFAULT }]}>{error}</AiText>
       ) : null}
 
-      <View style={{ paddingBottom: Math.max(insets.bottom, spacing[2]) + bottomInset }}>
+      <View style={{ paddingBottom: inputPaddingBottom }}>
         {inputContent}
         <AiText style={[styles.disclaimer, { color: theme.colors.text[400] }]}>
           {strings.disclaimer}
