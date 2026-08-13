@@ -1,42 +1,63 @@
 import { Dimensions } from 'react-native';
 
 export const AI_BUTTON_SIZE = 52;
-/** GlobalFAB'ın üstünde kalması için ekstra boşluk (FAB ~56px + margin). */
-export const AI_BUTTON_BOTTOM_OFFSET = 96;
-export const AI_BUTTON_RIGHT_OFFSET = 24;
+/** Distance from the overlay bottom — high enough to clear home indicator / chrome. */
+export const AI_BUTTON_BOTTOM_OFFSET = 148;
+export const AI_BUTTON_RIGHT_OFFSET = 20;
 
 export interface AiButtonPoint {
   x: number;
   y: number;
 }
 
-export function getDefaultAiButtonPosition(insets: {
-  top: number;
-  bottom: number;
-  left: number;
-  right: number;
-}): AiButtonPoint {
-  const { width, height } = Dimensions.get('window');
-  return {
-    x: width - AI_BUTTON_RIGHT_OFFSET - AI_BUTTON_SIZE - insets.right,
-    y: height - AI_BUTTON_BOTTOM_OFFSET - AI_BUTTON_SIZE - insets.bottom,
-  };
+export interface AiOverlayLayout {
+  width: number;
+  height: number;
 }
 
-/** Sürükleme sonrası butonu ekran sınırları içinde tutar. */
+export function getDefaultAiButtonPosition(
+  insets: {
+    top: number;
+    bottom: number;
+    left: number;
+    right: number;
+  },
+  layout?: AiOverlayLayout | null
+): AiButtonPoint {
+  const window = Dimensions.get('window');
+  const width = layout?.width || window.width;
+  const height = layout?.height || window.height;
+  const usingOverlayLayout = !!layout && layout.height > 0;
+
+  // Nested overlay already sits above the home indicator; don't subtract it twice.
+  const bottomInset = usingOverlayLayout ? 0 : insets.bottom;
+  const rightInset = usingOverlayLayout ? 0 : insets.right;
+
+  const x = width - AI_BUTTON_RIGHT_OFFSET - AI_BUTTON_SIZE - rightInset;
+  const y = height - AI_BUTTON_BOTTOM_OFFSET - AI_BUTTON_SIZE - bottomInset;
+
+  return clampAiButtonPosition({ x, y }, insets, layout);
+}
+
+/** Sürükleme sonrası butonu overlay / ekran sınırları içinde tutar. */
 export function clampAiButtonPosition(
   point: AiButtonPoint,
-  insets: { top: number; bottom: number; left: number; right: number }
+  insets: { top: number; bottom: number; left: number; right: number },
+  layout?: AiOverlayLayout | null
 ): AiButtonPoint {
-  const { width, height } = Dimensions.get('window');
-  const minX = insets.left + 8;
-  const maxX = width - AI_BUTTON_SIZE - insets.right - 8;
-  const minY = insets.top + 8;
-  const maxY = height - AI_BUTTON_SIZE - insets.bottom - 8;
+  const window = Dimensions.get('window');
+  const width = layout?.width || window.width;
+  const height = layout?.height || window.height;
+  const usingOverlayLayout = !!layout && layout.height > 0;
+
+  const minX = (usingOverlayLayout ? 0 : insets.left) + 8;
+  const maxX = width - AI_BUTTON_SIZE - (usingOverlayLayout ? 0 : insets.right) - 8;
+  const minY = (usingOverlayLayout ? 0 : insets.top) + 8;
+  const maxY = height - AI_BUTTON_SIZE - (usingOverlayLayout ? 0 : insets.bottom) - 8;
 
   return {
-    x: Math.min(Math.max(point.x, minX), maxX),
-    y: Math.min(Math.max(point.y, minY), maxY),
+    x: Math.min(Math.max(point.x, minX), Math.max(minX, maxX)),
+    y: Math.min(Math.max(point.y, minY), Math.max(minY, maxY)),
   };
 }
 

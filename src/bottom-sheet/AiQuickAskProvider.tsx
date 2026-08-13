@@ -14,7 +14,7 @@ import { useAiStrings } from '../i18n/AiStringsContext';
 import { spacing } from '../theme/tokens';
 import { AiText } from '../components/AiText';
 import { AiQuickAskContext, type AiQuickAskContextValue } from './aiQuickAskContext';
-import { AiQuickAskMessages, AiQuickAskInputBar } from './AiQuickAskMessages';
+import { AiQuickAskMessages, AiQuickAskInputOverlay } from './AiQuickAskMessages';
 
 export interface AiQuickAskProviderProps {
   children: ReactNode;
@@ -119,10 +119,9 @@ export function AiQuickAskProvider({
             backdropComponent={renderBackdrop}
             backgroundStyle={{ backgroundColor: theme.colors.bg.DEFAULT }}
             handleIndicatorStyle={{ backgroundColor: theme.colors.text[300] }}
-            keyboardBehavior="interactive"
-            keyboardBlurBehavior="restore"
-            android_keyboardInputMode="adjustResize"
             enableDynamicSizing={false}
+            activeOffsetY={[-8, 8]}
+            failOffsetX={[-16, 16]}
           >
             <BottomSheetView style={styles.sheetContent}>
               <View style={[styles.header, { borderBottomColor: theme.colors.border.DEFAULT }]}>
@@ -145,9 +144,9 @@ export function AiQuickAskProvider({
               <View style={styles.messages}>
                 <AiQuickAskMessages />
               </View>
-              <AiQuickAskInputBar />
             </BottomSheetView>
           </BottomSheet>
+          <AiQuickAskInputOverlay />
         </GestureHandlerRootView>
       </Modal>
     </AiQuickAskContext.Provider>

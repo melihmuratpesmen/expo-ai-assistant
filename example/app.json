@@ -3,7 +3,7 @@
     "name": "AI Assistant Demo",
     "slug": "expo-ai-assistant-example",
     "owner": "melihpesmen",
-    "version": "1.0.0",
+    "version": "0.1.3",
     "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",

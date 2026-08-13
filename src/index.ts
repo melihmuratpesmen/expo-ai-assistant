@@ -6,6 +6,7 @@ export { useAiCallbacks, useAiSlots } from './provider/slots';
 export { useAiChat } from './hooks/useAiChat';
 export type { UseAiChatOptions, UseAiChatResult } from './hooks/useAiChat';
 export { useAiConversations } from './hooks/useAiConversations';
+export { useScreenBottomKeyboardLift } from './hooks/useScreenBottomKeyboardLift';
 export {
   useKeyboardBottomInset,
   chatInputBottomPadding,

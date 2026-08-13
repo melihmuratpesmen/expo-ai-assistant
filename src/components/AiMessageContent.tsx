@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { fontSize, radius, spacing } from '../theme/tokens';
@@ -151,6 +152,9 @@ function TableBlockView({ block }: { block: TableBlock }) {
         horizontal
         showsHorizontalScrollIndicator
         nestedScrollEnabled
+        directionalLockEnabled
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
         style={styles.horizontalScroll}
       >
         <View style={[styles.table, { borderColor }]}>

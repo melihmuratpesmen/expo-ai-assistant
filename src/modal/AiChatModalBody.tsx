@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
 } from 'react-native';
+import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -17,10 +18,7 @@ import { AiChatInput } from '../components/AiChatInput';
 import { AiText } from '../components/AiText';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
-import {
-  chatInputBottomPadding,
-  useKeyboardBottomInset,
-} from '../hooks/useKeyboardBottomInset';
+import { useScreenBottomKeyboardLift } from '../hooks/useScreenBottomKeyboardLift';
 import { spacing, fontSize } from '../theme/tokens';
 import { DEFAULT_SUGGESTIONS } from '../constants/aiAssistant.constants';
 import type { AiSuggestion } from '../types/aiContext';
@@ -46,7 +44,7 @@ export function AiChatModalBody({
   const theme = useAiTheme();
   const strings = useAiStrings();
   const insets = useSafeAreaInsets();
-  const keyboardHeight = useKeyboardBottomInset();
+  const keyboardLiftStyle = useScreenBottomKeyboardLift(true);
   const title = titleProp ?? strings.assistantTitle;
   const { chat } = useAiChatModalSession();
   const {
@@ -178,31 +176,31 @@ export function AiChatModalBody({
         }
       />
 
-      <View
-        style={[
-          styles.inputBar,
-          {
-            paddingBottom: showHeader
-              ? chatInputBottomPadding(keyboardHeight, insets.bottom, spacing[2])
-              : chatInputBottomPadding(keyboardHeight, 0, spacing[2]),
-            borderTopColor: theme.colors.border.DEFAULT,
-            backgroundColor: theme.colors.bg.DEFAULT,
-          },
-        ]}
-      >
-        <AiChatInput
-          onSend={text => {
-            void sendMessage(text);
-            scrollToEnd();
-          }}
-          isStreaming={isStreaming}
-          onStop={cancelStreaming}
-          placeholder={strings.continuePlaceholder}
-        />
-        <AiText style={[styles.disclaimer, { color: theme.colors.text[400] }]}>
-          {strings.disclaimer}
-        </AiText>
-      </View>
+      <Animated.View style={keyboardLiftStyle}>
+        <View
+          style={[
+            styles.inputBar,
+            {
+              paddingBottom: showHeader ? Math.max(insets.bottom, spacing[2]) : spacing[2],
+              borderTopColor: theme.colors.border.DEFAULT,
+              backgroundColor: theme.colors.bg.DEFAULT,
+            },
+          ]}
+        >
+          <AiChatInput
+            onSend={text => {
+              void sendMessage(text);
+              scrollToEnd();
+            }}
+            isStreaming={isStreaming}
+            onStop={cancelStreaming}
+            placeholder={strings.continuePlaceholder}
+          />
+          <AiText style={[styles.disclaimer, { color: theme.colors.text[400] }]}>
+            {strings.disclaimer}
+          </AiText>
+        </View>
+      </Animated.View>
     </View>
   );
 }

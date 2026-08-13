@@ -9,13 +9,14 @@ import {
   Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
 import { useAiChat } from '../hooks/useAiChat';
 import { AiMessageBubble } from '../components/AiMessageBubble';
 import { AiChatInput } from '../components/AiChatInput';
 import { AiText } from '../components/AiText';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
-import { useKeyboardBottomInset } from '../hooks/useKeyboardBottomInset';
+import { useKeyboardOpenHeight } from './useKeyboardOpenHeight';
 import { spacing, radius } from '../theme/tokens';
 import type { AiChatMessage } from '../types/aiChat';
 import type { AiButtonPoint } from './aiButtonPosition';
@@ -58,7 +59,23 @@ export function AiFloatingChatPanel({
   const listRef = useRef<FlatList<AiChatMessage>>(null);
   const sentInitialRef = useRef(false);
   const lastAssistantId = [...messages].reverse().find(m => m.role === 'assistant')?.id;
-  const keyboardHeight = useKeyboardBottomInset(visible);
+  const keyboardOpenHeight = useKeyboardOpenHeight();
+  const screen = Dimensions.get('window');
+  const panelLeft = Math.min(
+    Math.max(anchor.x + AI_BUTTON_SIZE - PANEL_WIDTH, spacing[4]),
+    screen.width - PANEL_WIDTH - spacing[4]
+  );
+  const panelTop = Math.max(
+    Math.min(anchor.y - PANEL_HEIGHT - 12, screen.height - PANEL_HEIGHT - 24),
+    48
+  );
+  const panelBottom = panelTop + PANEL_HEIGHT;
+  const keyboardLiftStyle = useAnimatedStyle(() => {
+    if (!visible) return { transform: [{ translateY: 0 }] };
+    const visibleBottom = screen.height - keyboardOpenHeight.value;
+    const lift = Math.max(0, panelBottom + 12 - visibleBottom);
+    return { transform: [{ translateY: -lift }] };
+  });
 
   useEffect(() => {
     if (!visible) {
@@ -89,27 +106,14 @@ export function AiFloatingChatPanel({
 
   if (!visible) return null;
 
-  const screen = Dimensions.get('window');
-  const left = Math.min(
-    Math.max(anchor.x + AI_BUTTON_SIZE - PANEL_WIDTH, spacing[4]),
-    screen.width - PANEL_WIDTH - spacing[4]
-  );
-  const preferredTop = Math.max(
-    Math.min(anchor.y - PANEL_HEIGHT - 12, screen.height - PANEL_HEIGHT - 24),
-    48
-  );
-  const top =
-    keyboardHeight > 0
-      ? Math.max(48, Math.min(preferredTop, screen.height - PANEL_HEIGHT - keyboardHeight - 12))
-      : preferredTop;
-
   return (
-    <View
+    <Animated.View
       style={[
         styles.panel,
+        keyboardLiftStyle,
         {
-          left,
-          top,
+          left: panelLeft,
+          top: panelTop,
           backgroundColor: theme.colors.bg.DEFAULT,
           borderColor: theme.colors.border.DEFAULT,
         },
@@ -173,7 +177,7 @@ export function AiFloatingChatPanel({
           placeholder={strings.continuePlaceholder}
         />
       </View>
-    </View>
+    </Animated.View>
   );
 }
 

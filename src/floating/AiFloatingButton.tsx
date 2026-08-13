@@ -15,6 +15,7 @@ import {
   AI_BUTTON_SIZE,
   getDefaultAiButtonPosition,
   type AiButtonPoint,
+  type AiOverlayLayout,
 } from './aiButtonPosition';
 import { computeAiKeyboardLift } from './useAiKeyboardLift';
 import { useKeyboardOpenHeight } from './useKeyboardOpenHeight';
@@ -24,6 +25,8 @@ export interface AiFloatingButtonProps {
   onLongPress?: () => void;
   onPositionChange?: (point: AiButtonPoint) => void;
   active?: boolean;
+  /** Overlay size; defaults to the window when omitted. */
+  layout?: AiOverlayLayout | null;
 }
 
 export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
@@ -31,14 +34,15 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
   onLongPress,
   onPositionChange,
   active = false,
+  layout = null,
 }) => {
   const theme = useAiTheme();
   const strings = useAiStrings();
   const insets = useSafeAreaInsets();
 
   const defaultPosition = useMemo(
-    () => getDefaultAiButtonPosition(insets),
-    [insets.top, insets.bottom, insets.left, insets.right]
+    () => getDefaultAiButtonPosition(insets, layout),
+    [insets.top, insets.bottom, insets.left, insets.right, layout?.width, layout?.height]
   );
 
   const translateX = useSharedValue(defaultPosition.x);
@@ -53,16 +57,26 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
   const snapLeft = useSharedValue(16);
   const snapRight = useSharedValue(300);
   const screenCenterX = useSharedValue(200);
+  const screenHeight = useSharedValue(Dimensions.get('window').height);
 
   useEffect(() => {
-    const { width, height } = Dimensions.get('window');
-    minX.value = insets.left + 8;
-    maxX.value = width - AI_BUTTON_SIZE - insets.right - 8;
-    minY.value = insets.top + 8;
-    maxY.value = height - AI_BUTTON_SIZE - insets.bottom - 8;
-    snapLeft.value = insets.left + 16;
-    snapRight.value = width - AI_BUTTON_SIZE - insets.right - 16;
+    const window = Dimensions.get('window');
+    const width = layout?.width || window.width;
+    const height = layout?.height || window.height;
+    const nested = !!layout && layout.height > 0;
+    const leftInset = nested ? 0 : insets.left;
+    const rightInset = nested ? 0 : insets.right;
+    const topInset = nested ? 0 : insets.top;
+    const bottomInset = nested ? 0 : insets.bottom;
+
+    minX.value = leftInset + 8;
+    maxX.value = width - AI_BUTTON_SIZE - rightInset - 8;
+    minY.value = topInset + 8;
+    maxY.value = height - AI_BUTTON_SIZE - bottomInset - 8;
+    snapLeft.value = leftInset + 16;
+    snapRight.value = width - AI_BUTTON_SIZE - rightInset - 16;
     screenCenterX.value = width / 2;
+    screenHeight.value = nested ? height : window.height;
 
     translateX.value = defaultPosition.x;
     translateY.value = defaultPosition.y;
@@ -72,6 +86,8 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
   }, [
     defaultPosition.x,
     defaultPosition.y,
+    layout?.width,
+    layout?.height,
     insets.left,
     insets.right,
     insets.top,
@@ -83,6 +99,7 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
     snapLeft,
     snapRight,
     screenCenterX,
+    screenHeight,
     translateX,
     translateY,
     startX,
@@ -173,14 +190,6 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
   );
 
   const keyboardOpenHeight = useKeyboardOpenHeight();
-  const screenHeight = useSharedValue(Dimensions.get('window').height);
-
-  useEffect(() => {
-    const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      screenHeight.value = window.height;
-    });
-    return () => subscription.remove();
-  }, [screenHeight]);
 
   const animatedStyle = useAnimatedStyle(() => {
     const keyboardLift = computeAiKeyboardLift(

@@ -65,7 +65,7 @@ See [docs/SURFACES.md](./docs/SURFACES.md).
 ## Installation
 
 ```bash
-npx expo install expo-ai-assistant react-native-gesture-handler react-native-reanimated react-native-safe-area-context
+npx expo install expo-ai-assistant react-native-gesture-handler react-native-reanimated react-native-safe-area-context react-native-keyboard-controller
 npm install @expo/vector-icons
 ```
 
@@ -78,8 +78,9 @@ npx expo install @gorhom/bottom-sheet
 **Required app setup**
 
 1. Wrap the app in `GestureHandlerRootView`
-2. Enable the Reanimated Babel plugin
-3. Wrap chat trees in `AiAssistantProvider`
+2. Wrap the app in `KeyboardProvider` from `react-native-keyboard-controller`
+3. Enable the Reanimated Babel plugin
+4. Wrap chat trees in `AiAssistantProvider`
 
 ### Peer dependencies
 
@@ -88,6 +89,7 @@ npx expo install @gorhom/bottom-sheet
 | `react`, `react-native` | Yes |
 | `react-native-gesture-handler` | Yes |
 | `react-native-reanimated` | Yes |
+| `react-native-keyboard-controller` | Yes — keyboard lift (same pattern as MyExamy) |
 | `react-native-safe-area-context` | Yes |
 | `@expo/vector-icons` | Yes |
 | `@gorhom/bottom-sheet` | Optional — only for `./bottom-sheet` |

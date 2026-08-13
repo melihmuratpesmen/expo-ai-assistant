@@ -3,6 +3,7 @@ export type { AiQuickAskProviderProps } from './AiQuickAskProvider';
 export {
   AiQuickAskMessages,
   AiQuickAskInputBar,
+  AiQuickAskInputOverlay,
   AiBottomSheetChatInput,
   AI_QUICK_ASK_INPUT_OVERLAY_HEIGHT,
 } from './AiQuickAskMessages';

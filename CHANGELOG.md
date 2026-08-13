@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.1.3
+
+- Keyboard lift matches MyExamy (`useScreenBottomKeyboardLift` + sheet input overlay)
+- Demo: circular Telegram-style light/dark reveal, visible version badge
+- Floating FAB default position uses overlay bounds (not stuck to the bottom)
+- Sheet tables: horizontal scroll via gesture-handler + sheet `failOffsetX`
+
 ## 0.1.2
 
 - Keyboard-aware input padding on full-page + modal (`useKeyboardBottomInset`); bottom-sheet uses gorhom `keyboardBehavior="interactive"`

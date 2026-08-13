@@ -1,13 +1,23 @@
-import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, useColorScheme } from 'react-native';
+import React, { useMemo, useState, useCallback } from 'react';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+  type GestureResponderEvent,
+} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { AiAssistantProvider, createMockTransport, useAiTheme } from 'expo-ai-assistant';
 import { AiChatScreen, AiConversationHistoryScreen } from 'expo-ai-assistant/full-page';
 import { AiFloatingOverlay } from 'expo-ai-assistant/floating';
 import { AiQuickAskProvider, useAiQuickAskSession } from 'expo-ai-assistant/bottom-sheet';
 import { AiChatModalProvider, useAiChatModalSession } from 'expo-ai-assistant/modal';
+import { useCircularThemeReveal } from './ThemeCircularReveal';
+import { version as DEMO_VERSION } from '../package.json';
 
 type Tab = 'full' | 'floating' | 'sheet' | 'modal' | 'history';
 type ColorScheme = 'light' | 'dark';
@@ -74,7 +84,7 @@ function DemoChrome({
   tab: Tab;
   setTab: (t: Tab) => void;
   colorScheme: ColorScheme;
-  onToggleScheme: () => void;
+  onToggleScheme: (event: GestureResponderEvent) => void;
   conversationId: string | null;
   setConversationId: (id: string | null) => void;
 }) {
@@ -89,9 +99,12 @@ function DemoChrome({
     >
       <StatusBar style={isDark ? 'light' : 'dark'} />
       <View style={styles.titleRow}>
-        <Text style={[styles.title, { color: theme.colors.text.DEFAULT }]}>
-          expo-ai-assistant
-        </Text>
+        <View style={styles.titleBlock}>
+          <Text style={[styles.title, { color: theme.colors.text.DEFAULT }]}>
+            expo-ai-assistant
+          </Text>
+          <Text style={[styles.version, { color: theme.colors.text[500] }]}>v{DEMO_VERSION}</Text>
+        </View>
         <Pressable
           onPress={onToggleScheme}
           style={[
@@ -175,6 +188,12 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('full');
   const [conversationId, setConversationId] = useState<string | null>(null);
 
+  const swapScheme = useCallback(() => {
+    setColorScheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
+
+  const { captureRef, overlayNode, onTogglePress } = useCircularThemeReveal(swapScheme);
+
   const config = useMemo(() => {
     const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
     if (apiKey) {
@@ -196,31 +215,34 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={styles.root}>
-      <SafeAreaProvider>
-        <AiAssistantProvider
-          config={config}
-          colorScheme={colorScheme}
-          strings={{
-            assistantTitle: 'expo-ai-assistant',
-            welcomeSubtitle: apiKeyHint(config),
-          }}
-        >
-          <AiQuickAskProvider onOpenFullPage={openFull}>
-            <AiChatModalProvider onOpenFullPage={openFull} presentation="card">
-              <DemoChrome
-                tab={tab}
-                setTab={setTab}
-                colorScheme={colorScheme}
-                onToggleScheme={() =>
-                  setColorScheme(prev => (prev === 'dark' ? 'light' : 'dark'))
-                }
-                conversationId={conversationId}
-                setConversationId={setConversationId}
-              />
-            </AiChatModalProvider>
-          </AiQuickAskProvider>
-        </AiAssistantProvider>
-      </SafeAreaProvider>
+      <KeyboardProvider>
+        <SafeAreaProvider>
+          <View ref={captureRef} collapsable={false} style={styles.root}>
+            <AiAssistantProvider
+              config={config}
+              colorScheme={colorScheme}
+              strings={{
+                assistantTitle: 'expo-ai-assistant',
+                welcomeSubtitle: apiKeyHint(config),
+              }}
+            >
+              <AiQuickAskProvider onOpenFullPage={openFull}>
+                <AiChatModalProvider onOpenFullPage={openFull} presentation="card">
+                  <DemoChrome
+                    tab={tab}
+                    setTab={setTab}
+                    colorScheme={colorScheme}
+                    onToggleScheme={onTogglePress}
+                    conversationId={conversationId}
+                    setConversationId={setConversationId}
+                  />
+                </AiChatModalProvider>
+              </AiQuickAskProvider>
+            </AiAssistantProvider>
+          </View>
+          {overlayNode}
+        </SafeAreaProvider>
+      </KeyboardProvider>
     </GestureHandlerRootView>
   );
 }
@@ -245,6 +267,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
+  },
+  titleBlock: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: 8,
+    flexShrink: 1,
+  },
+  version: {
+    fontSize: 13,
+    fontWeight: '600',
   },
   themeBtn: {
     paddingHorizontal: 12,

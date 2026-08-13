@@ -1,10 +1,47 @@
 import { Keyboard, Platform } from 'react-native';
 import { useEffect } from 'react';
-import { useSharedValue } from 'react-native-reanimated';
+import {
+  useGenericKeyboardHandler,
+  useReanimatedKeyboardAnimation,
+} from 'react-native-keyboard-controller';
+import { useAnimatedReaction, useSharedValue } from 'react-native-reanimated';
 
-/** Keyboard open height via RN Keyboard API (no keyboard-controller peer). */
+/** Keyboard open height (px). iOS + Android, matching MyExamy. */
 export function useKeyboardOpenHeight() {
   const keyboardOpenHeight = useSharedValue(0);
+  const { height: keyboardHeight } = useReanimatedKeyboardAnimation();
+
+  useAnimatedReaction(
+    () => {
+      const h = keyboardHeight.value;
+      if (h === 0) return 0;
+      return Math.abs(h);
+    },
+    value => {
+      if (Platform.OS === 'ios') {
+        keyboardOpenHeight.value = value;
+      }
+    },
+    []
+  );
+
+  useGenericKeyboardHandler(
+    {
+      onStart: e => {
+        'worklet';
+        keyboardOpenHeight.value = e.height;
+      },
+      onMove: e => {
+        'worklet';
+        keyboardOpenHeight.value = e.height;
+      },
+      onEnd: e => {
+        'worklet';
+        keyboardOpenHeight.value = e.height;
+      },
+    },
+    []
+  );
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';

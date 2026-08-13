@@ -2,6 +2,7 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "resolveJsonModule": true,
     "paths": {
       "expo-ai-assistant": ["../src/index.ts"],
       "expo-ai-assistant/full-page": ["../src/full-page/index.ts"],

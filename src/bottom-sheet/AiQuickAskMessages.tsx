@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, Keyboard, Platform } from 'react-native';
+import Animated from 'react-native-reanimated';
 import {
   BottomSheetFlatList,
   BottomSheetTextInput,
@@ -14,6 +15,7 @@ import { AiChatInput } from '../components/AiChatInput';
 import { AiText } from '../components/AiText';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
+import { useScreenBottomKeyboardLift } from '../hooks/useScreenBottomKeyboardLift';
 import { spacing, fontSize } from '../theme/tokens';
 import { DEFAULT_SUGGESTIONS } from '../constants/aiAssistant.constants';
 import type { AiSuggestion } from '../types/aiContext';
@@ -147,41 +149,49 @@ export const AiBottomSheetChatInput: React.FC<{
   />
 );
 
-export const AiQuickAskInputBar: React.FC = () => {
+export const AiQuickAskInputOverlay: React.FC = () => {
   const theme = useAiTheme();
   const strings = useAiStrings();
   const insets = useSafeAreaInsets();
   const { isActive, chat } = useAiQuickAskSession();
   const { isStreaming, sendMessage, cancelStreaming } = chat;
+  const keyboardLiftStyle = useScreenBottomKeyboardLift(isActive);
 
   if (!isActive) return null;
 
   return (
-    <View
-      style={[
-        styles.inputBar,
-        {
-          backgroundColor: theme.colors.bg.DEFAULT,
-          // Sheet uses gorhom `keyboardBehavior="interactive"` for lift.
-          paddingBottom: Math.max(insets.bottom, spacing[2]),
-          borderTopColor: theme.colors.border.DEFAULT,
-        },
-      ]}
-    >
-      <AiBottomSheetChatInput
-        onSend={text => {
-          void sendMessage(text);
-        }}
-        isStreaming={isStreaming}
-        onStop={cancelStreaming}
-        placeholder={strings.continuePlaceholder}
-      />
-      <AiText style={[styles.disclaimer, { color: theme.colors.text[400] }]}>
-        {strings.disclaimer}
-      </AiText>
+    <View style={styles.overlayRoot} pointerEvents="box-none">
+      <Animated.View pointerEvents="box-none" style={[styles.overlayHost, keyboardLiftStyle]}>
+        <View
+          pointerEvents="auto"
+          style={[
+            styles.inputBar,
+            {
+              backgroundColor: theme.colors.bg.DEFAULT,
+              paddingBottom: Math.max(insets.bottom, spacing[2]),
+              borderTopColor: theme.colors.border.DEFAULT,
+            },
+          ]}
+        >
+          <AiBottomSheetChatInput
+            onSend={text => {
+              void sendMessage(text);
+            }}
+            isStreaming={isStreaming}
+            onStop={cancelStreaming}
+            placeholder={strings.continuePlaceholder}
+          />
+          <AiText style={[styles.disclaimer, { color: theme.colors.text[400] }]}>
+            {strings.disclaimer}
+          </AiText>
+        </View>
+      </Animated.View>
     </View>
   );
 };
+
+/** @deprecated Use AiQuickAskInputOverlay — input lives outside the sheet. */
+export const AiQuickAskInputBar = AiQuickAskInputOverlay;
 
 const styles = StyleSheet.create({
   messagesRoot: {
@@ -208,6 +218,13 @@ const styles = StyleSheet.create({
   emptyWelcome: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
+  },
+  overlayRoot: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'flex-end',
+  },
+  overlayHost: {
+    width: '100%',
   },
   inputBar: {
     paddingTop: spacing[2],

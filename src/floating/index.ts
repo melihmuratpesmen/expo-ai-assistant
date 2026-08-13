@@ -8,6 +8,8 @@ export { AiFloatingChatPanel } from './AiFloatingChatPanel';
 export type { AiFloatingChatPanelProps } from './AiFloatingChatPanel';
 export {
   AI_BUTTON_SIZE,
+  AI_BUTTON_BOTTOM_OFFSET,
   getDefaultAiButtonPosition,
   type AiButtonPoint,
+  type AiOverlayLayout,
 } from './aiButtonPosition';

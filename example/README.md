@@ -6,6 +6,8 @@ Offline by default via `createMockTransport()` — no API key required.
 
 Try **“Show a table”** / **“summary”** suggestions to see tool cards + `AiDataTable`. Use the **Dark / Light** toggle in the chrome.
 
+The header shows **v0.1.3** (library `package.json`). If Expo Go still shows an older number, force-quit and scan the QR again.
+
 ## Try without cloning
 
 Scan with **Expo Go (SDK 54)**:
@@ -22,11 +24,14 @@ Scan with **Expo Go (SDK 54)**:
 </p>
 
 - Project: [expo.dev/@melihpesmen/expo-ai-assistant-example](https://expo.dev/@melihpesmen/expo-ai-assistant-example)
+- Latest update (force open): [0.1.2 demo on EAS](https://expo.dev/accounts/melihpesmen/projects/expo-ai-assistant-example/updates/cb531451-0bfc-4828-b26b-e3c9948164f9) → **Preview**
 - Manual URL (Expo Go → Enter URL):
 
 ```text
 exp://u.expo.dev/645b533c-f76d-4c2d-a725-a7420b210ce7?runtime-version=exposdk%3A54.0.0&channel-name=preview
 ```
+
+If the app looks stale after a publish: force-quit Expo Go, reopen via the **Preview** link above (or shake device → Reload). Expo Go caches projects; git push alone does not refresh the phone.
 
 ## Run locally
 

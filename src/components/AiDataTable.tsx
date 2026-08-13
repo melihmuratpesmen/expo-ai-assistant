@@ -1,5 +1,6 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
@@ -70,6 +71,9 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
         horizontal
         showsHorizontalScrollIndicator
         nestedScrollEnabled
+        directionalLockEnabled
+        bounces={false}
+        keyboardShouldPersistTaps="handled"
         style={styles.horizontalScroll}
       >
         <View style={[styles.table, { borderColor }]}>

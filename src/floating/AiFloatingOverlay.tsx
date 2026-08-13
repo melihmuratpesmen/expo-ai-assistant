@@ -1,9 +1,13 @@
 import React, { useCallback, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import { AiFloatingButton } from './AiFloatingButton';
 import { AiInputBubble } from './AiInputBubble';
 import { AiFloatingChatPanel } from './AiFloatingChatPanel';
-import { getDefaultAiButtonPosition, type AiButtonPoint } from './aiButtonPosition';
+import {
+  getDefaultAiButtonPosition,
+  type AiButtonPoint,
+  type AiOverlayLayout,
+} from './aiButtonPosition';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export interface AiFloatingOverlayProps {
@@ -29,12 +33,20 @@ export function AiFloatingOverlay({
   onOpenFullPage,
 }: AiFloatingOverlayProps) {
   const insets = useSafeAreaInsets();
+  const [overlayLayout, setOverlayLayout] = useState<AiOverlayLayout | null>(null);
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
   const [panelInitialMessage, setPanelInitialMessage] = useState<string | null>(null);
   const [buttonAnchor, setButtonAnchor] = useState<AiButtonPoint>(() =>
     getDefaultAiButtonPosition(insets)
   );
+
+  const handleOverlayLayout = useCallback((event: LayoutChangeEvent) => {
+    const { width, height } = event.nativeEvent.layout;
+    setOverlayLayout(prev =>
+      prev && prev.width === width && prev.height === height ? prev : { width, height }
+    );
+  }, []);
 
   const closeBubble = useCallback(() => setBubbleVisible(false), []);
 
@@ -62,7 +74,7 @@ export function AiFloatingOverlay({
   if (!visible) return null;
 
   return (
-    <View style={styles.overlay} pointerEvents="box-none">
+    <View style={styles.overlay} pointerEvents="box-none" onLayout={handleOverlayLayout}>
       {bubbleVisible || panelVisible ? (
         <Pressable
           style={styles.backdrop}
@@ -93,6 +105,7 @@ export function AiFloatingOverlay({
 
       <AiFloatingButton
         active={bubbleVisible || panelVisible}
+        layout={overlayLayout}
         onPress={() => setBubbleVisible(prev => !prev)}
         onLongPress={() => openExpanded()}
         onPositionChange={setButtonAnchor}
