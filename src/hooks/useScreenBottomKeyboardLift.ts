@@ -25,8 +25,18 @@ export function useScreenBottomKeyboardLift(enabled = true, bottomInset?: number
 
   useEffect(() => {
     if (!enabled || !IS_ANDROID) return;
-    KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_NOTHING);
-    return () => KeyboardController.setDefaultMode();
+    try {
+      KeyboardController.setInputMode(AndroidSoftInputModes.SOFT_INPUT_ADJUST_NOTHING);
+    } catch {
+      // Expo Go / missing KeyboardProvider
+    }
+    return () => {
+      try {
+        KeyboardController.setDefaultMode();
+      } catch {
+        // ignore
+      }
+    };
   }, [enabled]);
 
   useAnimatedReaction(

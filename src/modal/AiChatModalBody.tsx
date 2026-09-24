@@ -176,7 +176,9 @@ export function AiChatModalBody({
         }
       />
 
-      <Animated.View style={keyboardLiftStyle}>
+      <Animated.View
+        style={[{ backgroundColor: theme.colors.bg.DEFAULT }, keyboardLiftStyle]}
+      >
         <View
           style={[
             styles.inputBar,
@@ -200,6 +202,10 @@ export function AiChatModalBody({
             {strings.disclaimer}
           </AiText>
         </View>
+        <View
+          pointerEvents="none"
+          style={[styles.keyboardFill, { backgroundColor: theme.colors.bg.DEFAULT }]}
+        />
       </Animated.View>
     </View>
   );
@@ -239,6 +245,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing[2],
     gap: spacing[1.5],
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  keyboardFill: {
+    height: 420,
+    marginBottom: -420,
   },
   disclaimer: {
     textAlign: 'center',

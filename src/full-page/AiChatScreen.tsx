@@ -100,15 +100,17 @@ export function AiChatScreen({
       keyboardShouldPersistTaps="handled"
       keyboardDismissMode="on-drag"
     >
-      <View style={[styles.welcomeIcon, { backgroundColor: theme.colors.primary.subtle }]}>
-        <Ionicons name="sparkles" size={28} color={theme.colors.primary.DEFAULT} />
+      <View style={styles.emptyIntro}>
+        <View style={[styles.welcomeIcon, { backgroundColor: theme.colors.primary.subtle }]}>
+          <Ionicons name="sparkles" size={28} color={theme.colors.primary.DEFAULT} />
+        </View>
+        <AiText variant="title" weight="semibold" style={styles.welcomeTitle}>
+          {strings.welcomeTitle}
+        </AiText>
+        <AiText style={[styles.welcomeSubtitle, { color: theme.colors.text[500] }]}>
+          {strings.welcomeSubtitle}
+        </AiText>
       </View>
-      <AiText variant="title" weight="semibold" style={styles.welcomeTitle}>
-        {strings.welcomeTitle}
-      </AiText>
-      <AiText style={[styles.welcomeSubtitle, { color: theme.colors.text[500] }]}>
-        {strings.welcomeSubtitle}
-      </AiText>
       <AiSuggestionGrid suggestions={suggestions} onSelect={handleSelectSuggestion} />
     </ScrollView>
   );
@@ -201,13 +203,31 @@ export function AiChatScreen({
         <AiText style={[styles.error, { color: theme.colors.error.DEFAULT }]}>{error}</AiText>
       ) : null}
 
-      <Animated.View style={keyboardLiftStyle}>
-        <View style={{ paddingBottom: Math.max(insets.bottom, spacing[2]) }}>
+      <Animated.View
+        style={[
+          { backgroundColor: theme.colors.bg.DEFAULT },
+          keyboardLiftStyle,
+        ]}
+      >
+        <View
+          style={[
+            styles.inputFooter,
+            {
+              backgroundColor: theme.colors.bg.DEFAULT,
+              paddingBottom: Math.max(insets.bottom, spacing[2]),
+            },
+          ]}
+        >
           {inputContent}
           <AiText style={[styles.disclaimer, { color: theme.colors.text[400] }]}>
             {strings.disclaimer}
           </AiText>
         </View>
+        {/* Opaque fill so lifted footer never shows chat/chips through the keyboard gap. */}
+        <View
+          pointerEvents="none"
+          style={[styles.keyboardFill, { backgroundColor: theme.colors.bg.DEFAULT }]}
+        />
       </Animated.View>
     </View>
   );
@@ -230,9 +250,13 @@ const styles = StyleSheet.create({
   centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyContent: {
     flexGrow: 1,
+    justifyContent: 'space-between',
+    paddingTop: 24,
+    paddingBottom: spacing[2],
+  },
+  emptyIntro: {
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing[4],
+    paddingHorizontal: spacing[4],
     gap: spacing[2],
   },
   welcomeIcon: {
@@ -241,12 +265,19 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing[2],
+    marginBottom: spacing[1],
   },
   welcomeTitle: { textAlign: 'center' },
-  welcomeSubtitle: { textAlign: 'center', marginBottom: spacing[3] },
+  welcomeSubtitle: { textAlign: 'center' },
   listContent: { paddingVertical: spacing[3] },
   error: { textAlign: 'center', marginBottom: spacing[1], fontSize: fontSize.xs },
+  inputFooter: {
+    paddingTop: spacing[1],
+  },
+  keyboardFill: {
+    height: 420,
+    marginBottom: -420,
+  },
   disclaimer: {
     textAlign: 'center',
     paddingHorizontal: spacing[4],

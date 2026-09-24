@@ -1,5 +1,7 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import Animated, { useSharedValue } from 'react-native-reanimated';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AiFloatingButton } from './AiFloatingButton';
 import { AiInputBubble } from './AiInputBubble';
 import { AiFloatingChatPanel } from './AiFloatingChatPanel';
@@ -8,7 +10,7 @@ import {
   type AiButtonPoint,
   type AiOverlayLayout,
 } from './aiButtonPosition';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAiKeyboardLift } from './useAiKeyboardLift';
 
 export interface AiFloatingOverlayProps {
   /** When false, overlay is hidden (host RBAC / prefs). Default true. */
@@ -39,6 +41,17 @@ export function AiFloatingOverlay({
   const [panelInitialMessage, setPanelInitialMessage] = useState<string | null>(null);
   const [buttonAnchor, setButtonAnchor] = useState<AiButtonPoint>(() =>
     getDefaultAiButtonPosition(insets)
+  );
+  const anchorY = useSharedValue(buttonAnchor.y);
+
+  useEffect(() => {
+    anchorY.value = buttonAnchor.y;
+  }, [anchorY, buttonAnchor.y]);
+
+  const clusterLiftStyle = useAiKeyboardLift(
+    anchorY,
+    bubbleVisible,
+    overlayLayout?.height ?? null
   );
 
   const handleOverlayLayout = useCallback((event: LayoutChangeEvent) => {
@@ -95,21 +108,26 @@ export function AiFloatingOverlay({
         onExpandFullPage={onOpenFullPage}
       />
 
-      <AiInputBubble
-        visible={bubbleVisible}
-        anchor={buttonAnchor}
-        onSend={handleBubbleSend}
-        onExpand={openExpanded}
-        onClose={closeBubble}
-      />
+      <Animated.View style={[styles.cluster, clusterLiftStyle]} pointerEvents="box-none">
+        <AiInputBubble
+          visible={bubbleVisible}
+          anchor={buttonAnchor}
+          layout={overlayLayout}
+          liftWithKeyboard={false}
+          onSend={handleBubbleSend}
+          onExpand={openExpanded}
+          onClose={closeBubble}
+        />
 
-      <AiFloatingButton
-        active={bubbleVisible || panelVisible}
-        layout={overlayLayout}
-        onPress={() => setBubbleVisible(prev => !prev)}
-        onLongPress={() => openExpanded()}
-        onPositionChange={setButtonAnchor}
-      />
+        <AiFloatingButton
+          active={bubbleVisible || panelVisible}
+          layout={overlayLayout}
+          liftWithKeyboard={false}
+          onPress={() => setBubbleVisible(prev => !prev)}
+          onLongPress={() => openExpanded()}
+          onPositionChange={setButtonAnchor}
+        />
+      </Animated.View>
     </View>
   );
 }
@@ -119,6 +137,9 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 55,
     elevation: 55,
+  },
+  cluster: {
+    ...StyleSheet.absoluteFillObject,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,

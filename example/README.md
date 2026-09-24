@@ -6,7 +6,7 @@ Offline by default via `createMockTransport()` — no API key required.
 
 Try **“Show a table”** / **“summary”** suggestions to see tool cards + `AiDataTable`. Use the **Dark / Light** toggle in the chrome.
 
-The header shows **v0.1.3** (library `package.json`). If Expo Go still shows an older number, force-quit and scan the QR again.
+The header shows **v0.1.13** (library `package.json`). If Expo Go still shows an older number, force-quit and scan the QR again.
 
 ## Try without cloning
 

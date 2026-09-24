@@ -8,6 +8,7 @@ import {
   type GestureResponderEvent,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
+import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -80,6 +81,7 @@ function DemoChrome({
   onToggleScheme,
   conversationId,
   setConversationId,
+  showStatusBar = true,
 }: {
   tab: Tab;
   setTab: (t: Tab) => void;
@@ -87,6 +89,7 @@ function DemoChrome({
   onToggleScheme: (event: GestureResponderEvent) => void;
   conversationId: string | null;
   setConversationId: (id: string | null) => void;
+  showStatusBar?: boolean;
 }) {
   const theme = useAiTheme();
   const isDark = colorScheme === 'dark';
@@ -97,7 +100,7 @@ function DemoChrome({
       style={[styles.safe, { backgroundColor: theme.colors.bg.DEFAULT }]}
       edges={['top', 'left', 'right']}
     >
-      <StatusBar style={isDark ? 'light' : 'dark'} />
+      {showStatusBar ? <StatusBar style={isDark ? 'light' : 'dark'} /> : null}
       <View style={styles.titleRow}>
         <View style={styles.titleBlock}>
           <Text style={[styles.title, { color: theme.colors.text.DEFAULT }]}>
@@ -116,8 +119,13 @@ function DemoChrome({
           ]}
           accessibilityLabel="Toggle color scheme"
         >
+          <Ionicons
+            name={isDark ? 'moon' : 'sunny'}
+            size={16}
+            color={isDark ? '#818CF8' : '#F59E0B'}
+          />
           <Text style={{ color: theme.colors.text.DEFAULT, fontWeight: '600', fontSize: 13 }}>
-            {isDark ? 'Light' : 'Dark'}
+            {isDark ? 'Dark' : 'Light'}
           </Text>
         </Pressable>
       </View>
@@ -180,6 +188,55 @@ function DemoChrome({
   );
 }
 
+function DemoTree({
+  colorScheme,
+  tab,
+  setTab,
+  conversationId,
+  setConversationId,
+  onToggleScheme,
+  config,
+  onOpenFull,
+  showStatusBar = true,
+}: {
+  colorScheme: ColorScheme;
+  tab: Tab;
+  setTab: (t: Tab) => void;
+  conversationId: string | null;
+  setConversationId: (id: string | null) => void;
+  onToggleScheme: (event: GestureResponderEvent) => void;
+  config: { openai?: unknown; transport?: unknown };
+  onOpenFull: (id: string | null) => void;
+  showStatusBar?: boolean;
+}) {
+  return (
+    <View style={[styles.root, { backgroundColor: colorScheme === 'dark' ? '#0B1220' : '#FFFFFF' }]}>
+      <AiAssistantProvider
+        config={config as never}
+        colorScheme={colorScheme}
+        strings={{
+          assistantTitle: 'expo-ai-assistant',
+          welcomeSubtitle: apiKeyHint(config),
+        }}
+      >
+        <AiQuickAskProvider onOpenFullPage={onOpenFull}>
+          <AiChatModalProvider onOpenFullPage={onOpenFull} presentation="card">
+            <DemoChrome
+              tab={tab}
+              setTab={setTab}
+              colorScheme={colorScheme}
+              onToggleScheme={onToggleScheme}
+              conversationId={conversationId}
+              setConversationId={setConversationId}
+              showStatusBar={showStatusBar}
+            />
+          </AiChatModalProvider>
+        </AiQuickAskProvider>
+      </AiAssistantProvider>
+    </View>
+  );
+}
+
 export default function App() {
   const systemScheme = useColorScheme();
   const [colorScheme, setColorScheme] = useState<ColorScheme>(
@@ -191,8 +248,6 @@ export default function App() {
   const swapScheme = useCallback(() => {
     setColorScheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
-
-  const { captureRef, overlayNode, onTogglePress } = useCircularThemeReveal(swapScheme);
 
   const config = useMemo(() => {
     const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
@@ -213,33 +268,46 @@ export default function App() {
     setTab('full');
   };
 
+  const incomingScheme: ColorScheme = colorScheme === 'dark' ? 'light' : 'dark';
+
+  const treeProps = {
+    tab,
+    setTab,
+    conversationId,
+    setConversationId,
+    config,
+    onOpenFull: openFull,
+  };
+
+  const { overlayNode, onTogglePress } = useCircularThemeReveal(swapScheme, () => (
+    <DemoTree
+      {...treeProps}
+      colorScheme={incomingScheme}
+      onToggleScheme={() => undefined}
+      showStatusBar={false}
+    />
+  ));
+
+  const handleToggleScheme = useCallback(
+    (event: GestureResponderEvent) => {
+      try {
+        onTogglePress(event);
+      } catch {
+        swapScheme();
+      }
+    },
+    [onTogglePress, swapScheme]
+  );
+
   return (
     <GestureHandlerRootView style={styles.root}>
       <KeyboardProvider>
         <SafeAreaProvider>
-          <View ref={captureRef} collapsable={false} style={styles.root}>
-            <AiAssistantProvider
-              config={config}
-              colorScheme={colorScheme}
-              strings={{
-                assistantTitle: 'expo-ai-assistant',
-                welcomeSubtitle: apiKeyHint(config),
-              }}
-            >
-              <AiQuickAskProvider onOpenFullPage={openFull}>
-                <AiChatModalProvider onOpenFullPage={openFull} presentation="card">
-                  <DemoChrome
-                    tab={tab}
-                    setTab={setTab}
-                    colorScheme={colorScheme}
-                    onToggleScheme={onTogglePress}
-                    conversationId={conversationId}
-                    setConversationId={setConversationId}
-                  />
-                </AiChatModalProvider>
-              </AiQuickAskProvider>
-            </AiAssistantProvider>
-          </View>
+          <DemoTree
+            {...treeProps}
+            colorScheme={colorScheme}
+            onToggleScheme={handleToggleScheme}
+          />
           {overlayNode}
         </SafeAreaProvider>
       </KeyboardProvider>
@@ -279,6 +347,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   themeBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 999,

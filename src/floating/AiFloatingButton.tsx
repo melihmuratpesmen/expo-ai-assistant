@@ -27,6 +27,8 @@ export interface AiFloatingButtonProps {
   active?: boolean;
   /** Overlay size; defaults to the window when omitted. */
   layout?: AiOverlayLayout | null;
+  /** When false, parent owns keyboard translation. Default true. */
+  liftWithKeyboard?: boolean;
 }
 
 export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
@@ -35,6 +37,7 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
   onPositionChange,
   active = false,
   layout = null,
+  liftWithKeyboard = true,
 }) => {
   const theme = useAiTheme();
   const strings = useAiStrings();
@@ -196,7 +199,7 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
       translateY.value,
       keyboardOpenHeight.value,
       screenHeight.value,
-      active
+      active && liftWithKeyboard
     );
 
     return {
@@ -205,7 +208,7 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
         { translateY: translateY.value - keyboardLift },
       ],
     };
-  });
+  }, [active, liftWithKeyboard]);
 
   return (
     <GestureDetector gesture={composedGesture}>

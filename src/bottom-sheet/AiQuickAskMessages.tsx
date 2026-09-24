@@ -25,25 +25,35 @@ export const AI_QUICK_ASK_INPUT_OVERLAY_HEIGHT = 96;
 
 export interface AiQuickAskMessagesProps {
   suggestions?: AiSuggestion[];
+  header?: React.ReactElement | null;
 }
 
 export const AiQuickAskMessages: React.FC<AiQuickAskMessagesProps> = ({
   suggestions = DEFAULT_SUGGESTIONS,
+  header = null,
 }) => {
   const theme = useAiTheme();
   const strings = useAiStrings();
   const { chat } = useAiQuickAskSession();
   const { messages, isStreaming, error, sendMessage, regenerateLastResponse } = chat;
   const listRef = useRef<BottomSheetFlatListMethods>(null);
+  const nearBottomRef = useRef(true);
   const lastAssistantId = [...messages].reverse().find(m => m.role === 'assistant')?.id;
 
-  const scrollToEnd = useCallback(() => {
+  const scrollToEnd = useCallback((force = false) => {
+    if (!force && !nearBottomRef.current) return;
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
+  }, []);
+
+  const handleScroll = useCallback((event: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
+    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+    nearBottomRef.current =
+      contentOffset.y + layoutMeasurement.height >= contentSize.height - 96;
   }, []);
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const sub = Keyboard.addListener(showEvent, scrollToEnd);
+    const sub = Keyboard.addListener(showEvent, () => scrollToEnd(true));
     return () => sub.remove();
   }, [scrollToEnd]);
 
@@ -77,58 +87,60 @@ export const AiQuickAskMessages: React.FC<AiQuickAskMessagesProps> = ({
   );
 
   return (
-    <View style={styles.messagesRoot}>
-      <BottomSheetFlatList<AiChatMessage>
-        ref={listRef}
-        style={styles.list}
-        data={messages}
-        keyExtractor={(item: AiChatMessage) => item.id}
-        renderItem={({ item }: { item: AiChatMessage }) => (
-          <AiMessageBubble
-            message={item}
-            showRegenerate={!isStreaming && item.role === 'assistant' && item.id === lastAssistantId}
-            onRegenerate={() => {
-              void regenerateLastResponse();
-              scrollToEnd();
-            }}
-          />
-        )}
-        contentContainerStyle={[
-          styles.listContent,
-          { paddingBottom: AI_QUICK_ASK_INPUT_OVERLAY_HEIGHT },
-        ]}
-        onContentSizeChange={scrollToEnd}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-        nestedScrollEnabled
-        ListFooterComponent={listFooter}
-        ListEmptyComponent={
-          showEmptyWelcome ? (
-            <View style={styles.emptyWelcome}>
-              <AiText weight="semibold" style={{ textAlign: 'center' }}>
-                {strings.welcomeTitle}
-              </AiText>
-              <AiText
-                style={{
-                  color: theme.colors.text[500],
-                  textAlign: 'center',
-                  marginTop: spacing[1],
-                }}
-              >
-                {strings.welcomeSubtitle}
-              </AiText>
-            </View>
-          ) : (
-            <AiText
-              style={{ color: theme.colors.text[500], textAlign: 'center', padding: spacing[4] }}
-            >
-              {strings.preparingReply}
+    <BottomSheetFlatList<AiChatMessage>
+      ref={listRef}
+      style={styles.list}
+      data={messages}
+      keyExtractor={(item: AiChatMessage) => item.id}
+      renderItem={({ item }: { item: AiChatMessage }) => (
+        <AiMessageBubble
+          message={item}
+          showRegenerate={!isStreaming && item.role === 'assistant' && item.id === lastAssistantId}
+          onRegenerate={() => {
+            void regenerateLastResponse();
+            scrollToEnd();
+          }}
+        />
+      )}
+      ListHeaderComponent={header}
+      contentContainerStyle={[
+        styles.listContent,
+        { paddingBottom: AI_QUICK_ASK_INPUT_OVERLAY_HEIGHT },
+      ]}
+      onScrollEndDrag={handleScroll}
+      onMomentumScrollEnd={handleScroll}
+      onContentSizeChange={() => scrollToEnd()}
+      keyboardShouldPersistTaps="handled"
+      keyboardDismissMode="on-drag"
+      showsVerticalScrollIndicator
+      nestedScrollEnabled
+      bounces
+      ListFooterComponent={listFooter}
+      ListEmptyComponent={
+        showEmptyWelcome ? (
+          <View style={styles.emptyWelcome}>
+            <AiText weight="semibold" style={{ textAlign: 'center' }}>
+              {strings.welcomeTitle}
             </AiText>
-          )
-        }
-      />
-    </View>
+            <AiText
+              style={{
+                color: theme.colors.text[500],
+                textAlign: 'center',
+                marginTop: spacing[1],
+              }}
+            >
+              {strings.welcomeSubtitle}
+            </AiText>
+          </View>
+        ) : (
+          <AiText
+            style={{ color: theme.colors.text[500], textAlign: 'center', padding: spacing[4] }}
+          >
+            {strings.preparingReply}
+          </AiText>
+        )
+      }
+    />
   );
 };
 
@@ -160,33 +172,35 @@ export const AiQuickAskInputOverlay: React.FC = () => {
   if (!isActive) return null;
 
   return (
-    <View style={styles.overlayRoot} pointerEvents="box-none">
-      <Animated.View pointerEvents="box-none" style={[styles.overlayHost, keyboardLiftStyle]}>
-        <View
-          pointerEvents="auto"
-          style={[
-            styles.inputBar,
-            {
-              backgroundColor: theme.colors.bg.DEFAULT,
-              paddingBottom: Math.max(insets.bottom, spacing[2]),
-              borderTopColor: theme.colors.border.DEFAULT,
-            },
-          ]}
-        >
-          <AiBottomSheetChatInput
-            onSend={text => {
-              void sendMessage(text);
-            }}
-            isStreaming={isStreaming}
-            onStop={cancelStreaming}
-            placeholder={strings.continuePlaceholder}
-          />
-          <AiText style={[styles.disclaimer, { color: theme.colors.text[400] }]}>
-            {strings.disclaimer}
-          </AiText>
-        </View>
-      </Animated.View>
-    </View>
+    <Animated.View pointerEvents="box-none" style={[styles.overlayRoot, keyboardLiftStyle]}>
+      <View
+        pointerEvents="auto"
+        style={[
+          styles.inputBar,
+          {
+            backgroundColor: theme.colors.bg.DEFAULT,
+            paddingBottom: Math.max(insets.bottom, spacing[2]),
+            borderTopColor: theme.colors.border.DEFAULT,
+          },
+        ]}
+      >
+        <AiChatInput
+          onSend={text => {
+            void sendMessage(text);
+          }}
+          isStreaming={isStreaming}
+          onStop={cancelStreaming}
+          placeholder={strings.continuePlaceholder}
+        />
+        <AiText style={[styles.disclaimer, { color: theme.colors.text[400] }]}>
+          {strings.disclaimer}
+        </AiText>
+      </View>
+      <View
+        pointerEvents="none"
+        style={[styles.keyboardFill, { backgroundColor: theme.colors.bg.DEFAULT }]}
+      />
+    </Animated.View>
   );
 };
 
@@ -194,17 +208,11 @@ export const AiQuickAskInputOverlay: React.FC = () => {
 export const AiQuickAskInputBar = AiQuickAskInputOverlay;
 
 const styles = StyleSheet.create({
-  messagesRoot: {
-    flex: 1,
-    minHeight: 280,
-  },
   list: {
     flex: 1,
-    minHeight: 0,
   },
   listContent: {
-    flexGrow: 1,
-    paddingTop: spacing[4],
+    paddingTop: 0,
     paddingBottom: spacing[2],
   },
   suggestionsWrap: {
@@ -220,11 +228,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[4],
   },
   overlayRoot: {
-    ...StyleSheet.absoluteFillObject,
-    justifyContent: 'flex-end',
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    zIndex: 10000,
+    elevation: 10000,
   },
-  overlayHost: {
-    width: '100%',
+  keyboardFill: {
+    height: 420,
+    marginBottom: -420,
   },
   inputBar: {
     paddingTop: spacing[2],

@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '47%',
-    flexGrow: 1,
+    flexGrow: 0,
     borderRadius: radius.xl,
     borderWidth: 1,
     padding: spacing[3.5],

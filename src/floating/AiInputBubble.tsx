@@ -6,7 +6,7 @@ import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { spacing, radius, fontSize } from '../theme/tokens';
 import { useAiKeyboardLift } from './useAiKeyboardLift';
-import { AI_BUTTON_SIZE, type AiButtonPoint } from './aiButtonPosition';
+import { AI_BUTTON_SIZE, type AiButtonPoint, type AiOverlayLayout } from './aiButtonPosition';
 
 export interface AiInputBubbleProps {
   visible: boolean;
@@ -15,6 +15,9 @@ export interface AiInputBubbleProps {
   onExpand: (text: string) => void;
   onClose: () => void;
   placeholder?: string;
+  layout?: AiOverlayLayout | null;
+  /** When false, parent owns keyboard translation. Default true. */
+  liftWithKeyboard?: boolean;
 }
 
 const BUBBLE_WIDTH = 280;
@@ -28,6 +31,8 @@ export const AiInputBubble: React.FC<AiInputBubbleProps> = ({
   onExpand,
   onClose,
   placeholder: placeholderProp,
+  layout: overlayLayout = null,
+  liftWithKeyboard = true,
 }) => {
   const theme = useAiTheme();
   const strings = useAiStrings();
@@ -42,7 +47,11 @@ export const AiInputBubble: React.FC<AiInputBubbleProps> = ({
     anchorY.value = anchor.y;
   }, [anchor.y, anchorY]);
 
-  const keyboardLiftStyle = useAiKeyboardLift(anchorY, visible);
+  const keyboardLiftStyle = useAiKeyboardLift(
+    anchorY,
+    visible && liftWithKeyboard,
+    overlayLayout?.height ?? null
+  );
 
   useEffect(() => {
     if (visible) {
@@ -54,14 +63,14 @@ export const AiInputBubble: React.FC<AiInputBubbleProps> = ({
   }, [visible]);
 
   const layout = useMemo(() => {
-    const screenWidth = Dimensions.get('window').width;
+    const screenWidth = overlayLayout?.width || Dimensions.get('window').width;
     const left = Math.min(
       Math.max(anchor.x + AI_BUTTON_SIZE - BUBBLE_WIDTH, spacing[4]),
       screenWidth - BUBBLE_WIDTH - spacing[4]
     );
     const top = Math.max(anchor.y - BUBBLE_OFFSET_ABOVE_BUTTON, spacing[4]);
     return { left, top };
-  }, [anchor.x, anchor.y]);
+  }, [anchor.x, anchor.y, overlayLayout?.width]);
 
   if (!visible) return null;
 
