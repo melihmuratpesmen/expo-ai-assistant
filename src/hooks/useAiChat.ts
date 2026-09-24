@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState, useSyncExternalStore } from 'react';
-import { useAiTransport } from '../provider/AiAssistantProvider';
-import { useAiCallbacks } from '../provider/slots';
-import { useAiStrings } from '../i18n/AiStringsContext';
-import { useLatestRef } from '../lib/useLatestRef';
-import { AiChatController, type AiChatState } from '../core/AiChatController';
+import { useAiChatRuntime, useAiTransport } from '../provider/AiAssistantProvider';
+import type { AiChatController, AiChatState } from '../core/AiChatController';
 import type { AiChatMessage } from '../types/aiChat';
 
 export { toTransportHistory } from '../core/AiChatController';
@@ -11,6 +8,11 @@ export { toTransportHistory } from '../core/AiChatController';
 export interface UseAiChatOptions {
   /** Persisted conversation to load through `transport.getHistory`. */
   conversationId?: string | null;
+  /**
+   * Share one conversation between every component / surface using the same
+   * id. Shared conversations live as long as `AiAssistantProvider`.
+   */
+  chatId?: string;
 }
 
 export interface UseAiChatResult {
@@ -33,32 +35,22 @@ export interface UseAiChatResult {
  * without subscribing the calling component to message updates.
  */
 export function useAiChatController(options: UseAiChatOptions = {}): AiChatController {
+  const runtime = useAiChatRuntime();
   const transport = useAiTransport();
-  const transportRef = useLatestRef(transport);
-  const callbacksRef = useLatestRef(useAiCallbacks());
-  const stringsRef = useLatestRef(useAiStrings());
+  const { chatId, conversationId } = options;
 
-  // The getters run only from actions and effects, never during render.
-  /* eslint-disable react-hooks/refs */
-  const [controller] = useState(
-    () =>
-      new AiChatController({
-        getTransport: () => transportRef.current,
-        getCallbacks: () => callbacksRef.current,
-        getStrings: () => stringsRef.current,
-        conversationId: options.conversationId,
-      })
-  );
-  /* eslint-enable react-hooks/refs */
+  // Always created so hook order stays stable; unused while `chatId` is set.
+  const [own] = useState(() => runtime.createController({ conversationId }));
+  const controller = chatId ? runtime.getSharedController(chatId) : own;
 
-  const { conversationId } = options;
   useEffect(() => {
     if (!conversationId) return;
     void controller.loadConversation(conversationId);
     return () => controller.cancelHistoryLoad();
   }, [controller, conversationId, transport]);
 
-  useEffect(() => () => controller.dispose(), [controller]);
+  // Shared controllers outlive their components.
+  useEffect(() => () => own.dispose(), [own]);
 
   return controller;
 }

@@ -1,17 +1,26 @@
 export { AiAssistantProvider, useAiTransport } from './provider/AiAssistantProvider';
-export type { AiAssistantConfig, AiAssistantProviderProps } from './provider/types';
+export type {
+  AiAssistantConfig,
+  AiAssistantProviderProps,
+  AiChatContextValue,
+} from './provider/types';
 export type {
   AiAssistantCallbacks,
   AiRenderSlots,
   AiEmptyStateSlotProps,
   AiInputSlotProps,
+  AiInputAccessoryProps,
   AiToolRenderer,
   AiToolRendererProps,
 } from './provider/slots';
 export { useAiCallbacks, useAiSlots } from './provider/slots';
 
 export { AiChatController, toTransportHistory } from './core/AiChatController';
-export type { AiChatState, AiChatControllerOptions } from './core/AiChatController';
+export type {
+  AiChatState,
+  AiChatControllerOptions,
+  AiChatEditingState,
+} from './core/AiChatController';
 export {
   useAiChat,
   useAiChatController,
@@ -26,9 +35,14 @@ export { useScreenBottomKeyboardLift } from './hooks/useScreenBottomKeyboardLift
 
 export {
   createOpenAICompatibleTransport,
+  createSseTransport,
+  createAiSdkTransport,
   createMockTransport,
+  withLocalHistory,
+  createMemoryStorage,
   AiHttpError,
   joinUrl,
+  SseEventParser,
 } from './transport';
 export type {
   AiTransport,
@@ -37,6 +51,16 @@ export type {
   AiTransportStreamResult,
   AiTransportHistoryResult,
   OpenAICompatibleTransportOptions,
+  OpenAICompatibleTool,
+  OpenAICompatibleToolContext,
+  OpenAIChatMessage,
+  OpenAIToolCall,
+  SseTransportOptions,
+  SseTransportEventContext,
+  SseEvent,
+  AiSdkTransportOptions,
+  AiKeyValueStorage,
+  LocalHistoryOptions,
   MockTransportOptions,
 } from './transport';
 
@@ -54,6 +78,8 @@ export { AiEmptyState } from './components/AiEmptyState';
 export type { AiEmptyStateProps } from './components/AiEmptyState';
 export { AiMessageContent } from './components/AiMessageContent';
 export { AiSuggestionGrid } from './components/AiSuggestionGrid';
+export { AiFollowUpSuggestions } from './components/AiFollowUpSuggestions';
+export type { AiFollowUpSuggestionsProps } from './components/AiFollowUpSuggestions';
 export { AiFunctionCallCard } from './components/AiFunctionCallCard';
 export type { AiFunctionCallCardProps } from './components/AiFunctionCallCard';
 export { AiFrontendDataRenderer } from './components/AiFrontendDataRenderer';
@@ -62,6 +88,7 @@ export { AiDataTable } from './components/AiDataTable';
 export { AiText } from './components/AiText';
 export { AiTypingIndicator } from './components/AiTypingIndicator';
 export { AiMessageActions } from './components/AiMessageActions';
+export type { AiMessageActionsProps } from './components/AiMessageActions';
 export { AiReasoningBadge } from './components/AiReasoningBadge';
 export { AiMarkdownText, isMarkdownRendererAvailable } from './components/AiMarkdownText';
 export { copyTextToClipboard } from './lib/clipboard';
@@ -81,8 +108,10 @@ export type {
   AiConversation,
   AiFunctionCall,
   AiFunctionCallStatus,
+  AiMessageFeedback,
   AiMessageRole,
   AiMessageStatus,
+  AiTokenUsage,
 } from './types/aiChat';
 export type { AiSuggestion } from './types/aiContext';
 export type { ContentBlock } from './types/contentBlock';

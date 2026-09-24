@@ -5,6 +5,11 @@ import { useAiChatFromController, type UseAiChatResult } from '../hooks/useAiCha
 export interface AiChatModalOpenOptions {
   /** Sent as the first user message after the modal opens. */
   initialMessage?: string;
+  /**
+   * Start a new conversation before opening. Default `true`, or `false` when
+   * the provider shares a conversation through `chatId`.
+   */
+  reset?: boolean;
 }
 
 /** Modal controls without chat state — components using it do not re-render while replies stream. */

@@ -14,8 +14,13 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import {
   AiAssistantProvider,
+  createMemoryStorage,
   createMockTransport,
+  createOpenAICompatibleTransport,
   useAiTheme,
+  withLocalHistory,
+  type AiAssistantCallbacks,
+  type AiAssistantConfig,
   type AiSuggestion,
 } from 'expo-ai-assistant';
 import { AiChatScreen, AiConversationHistoryScreen } from 'expo-ai-assistant/full-page';
@@ -26,6 +31,14 @@ import { useCircularThemeReveal } from './ThemeCircularReveal';
 import { version as DEMO_VERSION } from '../package.json';
 
 type Tab = 'full' | 'floating' | 'sheet' | 'modal' | 'history';
+
+/** Full page and modal share this conversation: "expand" in the modal continues it. */
+const DEMO_CHAT_ID = 'demo';
+
+/** Providing onFeedback shows 👍 / 👎 under replies. */
+const DEMO_CALLBACKS: AiAssistantCallbacks = {
+  onFeedback: (message, feedback) => console.log('[demo] feedback', message.id, feedback),
+};
 
 /** Prompts that trigger the mock transport's tool / table demos. */
 const DEMO_SUGGESTIONS: AiSuggestion[] = [
@@ -78,7 +91,7 @@ function ModalDemo() {
       </Text>
       <Pressable
         style={[styles.primaryBtn, { backgroundColor: theme.colors.primary.DEFAULT }]}
-        onPress={() => open({ initialMessage: 'Give me a short summary for today.' })}
+        onPress={() => open({ initialMessage: 'Give me a short summary for today.', reset: true })}
       >
         <Text style={styles.primaryBtnText}>Open modal chat</Text>
       </Pressable>
@@ -194,6 +207,7 @@ function DemoChrome({
       <View style={styles.body}>
         {tab === 'full' ? (
           <AiChatScreen
+            chatId={DEMO_CHAT_ID}
             conversationId={conversationId}
             suggestions={DEMO_SUGGESTIONS}
             onOpenHistory={() => setTab('history')}
@@ -224,6 +238,7 @@ function DemoTree({
   setConversationId,
   onToggleScheme,
   config,
+  isLive,
   onOpenFull,
   showStatusBar = true,
 }: {
@@ -233,22 +248,27 @@ function DemoTree({
   conversationId: string | null;
   setConversationId: (id: string | null) => void;
   onToggleScheme: (event: GestureResponderEvent) => void;
-  config: { openai?: unknown; transport?: unknown };
+  config: AiAssistantConfig;
+  isLive: boolean;
   onOpenFull: (id: string | null) => void;
   showStatusBar?: boolean;
 }) {
   return (
     <View style={[styles.root, { backgroundColor: colorScheme === 'dark' ? '#0B1220' : '#FFFFFF' }]}>
       <AiAssistantProvider
-        config={config as never}
+        config={config}
         colorScheme={colorScheme}
+        callbacks={DEMO_CALLBACKS}
         strings={{
           assistantTitle: 'expo-ai-assistant',
-          welcomeSubtitle: apiKeyHint(config),
+          welcomeSubtitle: isLive
+            ? 'Live OpenAI-compatible transport.'
+            : 'Mock transport — try “Show students as a table”.',
         }}
       >
         <AiQuickAskProvider onOpenFullPage={onOpenFull} suggestions={DEMO_SUGGESTIONS}>
           <AiChatModalProvider
+            chatId={DEMO_CHAT_ID}
             onOpenFullPage={onOpenFull}
             presentation="card"
             suggestions={DEMO_SUGGESTIONS}
@@ -281,18 +301,23 @@ export default function App() {
     setColorScheme(prev => (prev === 'dark' ? 'light' : 'dark'));
   }, []);
 
-  const config = useMemo(() => {
+  const { config, isLive } = useMemo((): { config: AiAssistantConfig; isLive: boolean } => {
+    // Local history makes the History tab work for any transport (in memory here;
+    // pass AsyncStorage in a real app).
+    const storage = createMemoryStorage();
     const apiKey = process.env.EXPO_PUBLIC_OPENAI_API_KEY;
     if (apiKey) {
-      return {
-        openai: {
-          apiKey: () => apiKey,
-          model: process.env.EXPO_PUBLIC_OPENAI_MODEL ?? 'gpt-4o-mini',
-          baseUrl: process.env.EXPO_PUBLIC_OPENAI_BASE_URL,
-        },
-      };
+      const transport = createOpenAICompatibleTransport({
+        apiKey: () => apiKey,
+        model: process.env.EXPO_PUBLIC_OPENAI_MODEL ?? 'gpt-4o-mini',
+        baseUrl: process.env.EXPO_PUBLIC_OPENAI_BASE_URL,
+      });
+      return { config: { transport: withLocalHistory(transport, { storage }) }, isLive: true };
     }
-    return { transport: createMockTransport() };
+    return {
+      config: { transport: withLocalHistory(createMockTransport(), { storage }) },
+      isLive: false,
+    };
   }, []);
 
   const openFull = (id: string | null) => {
@@ -308,6 +333,7 @@ export default function App() {
     conversationId,
     setConversationId,
     config,
+    isLive,
     onOpenFull: openFull,
   };
 
@@ -345,13 +371,6 @@ export default function App() {
       </KeyboardProvider>
     </GestureHandlerRootView>
   );
-}
-
-function apiKeyHint(config: { openai?: unknown; transport?: unknown }): string {
-  if ('openai' in config && config.openai) {
-    return 'Live OpenAI-compatible transport.';
-  }
-  return 'Mock transport — try “Show students as a table”.';
 }
 
 const styles = StyleSheet.create({

@@ -46,6 +46,15 @@ export interface AiStrings {
   previousPage: string;
   nextPage: string;
   scrollToBottom: string;
+  retry: string;
+  edit: string;
+  /** Banner above the composer while a message is edited. */
+  editingMessage: string;
+  cancelEdit: string;
+  feedbackGood: string;
+  feedbackBad: string;
+  /** Accessibility label of the follow-up suggestion chips. */
+  followUpSuggestions: string;
 }
 
 export const defaultStrings: AiStrings = {
@@ -94,6 +103,13 @@ export const defaultStrings: AiStrings = {
   previousPage: 'Previous page',
   nextPage: 'Next page',
   scrollToBottom: 'Scroll to latest message',
+  retry: 'Retry',
+  edit: 'Edit',
+  editingMessage: 'Editing message',
+  cancelEdit: 'Cancel editing',
+  feedbackGood: 'Good response',
+  feedbackBad: 'Bad response',
+  followUpSuggestions: 'Suggested follow-ups',
 };
 
 export type AiStringsOverride = {

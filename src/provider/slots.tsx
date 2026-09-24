@@ -1,6 +1,6 @@
 import React, { createContext, useContext } from 'react';
 import type { TextInputProps } from 'react-native';
-import type { AiChatMessage, AiFunctionCall } from '../types/aiChat';
+import type { AiChatMessage, AiFunctionCall, AiMessageFeedback } from '../types/aiChat';
 import type { AiSuggestion } from '../types/aiContext';
 import type { ContentBlock } from '../types/contentBlock';
 
@@ -11,6 +11,13 @@ export interface AiAssistantCallbacks {
   onError?: (error: string) => void;
   onToolComplete?: (tool: AiFunctionCall) => void;
   onConversationCreated?: (conversationId: string) => void;
+  /** An assistant reply finished streaming (final text, tool calls, usage). */
+  onMessageComplete?: (message: AiChatMessage) => void;
+  /**
+   * The user rated a reply (`null` when the rating was cleared). Providing this
+   * callback shows 👍 / 👎 actions under assistant messages.
+   */
+  onFeedback?: (message: AiChatMessage, feedback: AiMessageFeedback | null) => void;
 }
 
 export interface AiEmptyStateSlotProps {
@@ -26,6 +33,14 @@ export interface AiInputSlotProps {
   onStop?: () => void;
   /** Surface-specific text input (the bottom sheet passes `BottomSheetTextInput`). */
   TextInputComponent?: React.ComponentType<TextInputProps>;
+  /** Initial text, e.g. the message being edited. */
+  defaultValue?: string;
+  autoFocus?: boolean;
+}
+
+export interface AiInputAccessoryProps {
+  side: 'left' | 'right';
+  isStreaming: boolean;
 }
 
 export interface AiToolRendererProps {
@@ -43,6 +58,8 @@ export interface AiRenderSlots {
   renderEmpty?: (props: AiEmptyStateSlotProps) => React.ReactNode;
   /** Composer on every surface. */
   renderInput?: (props: AiInputSlotProps) => React.ReactNode;
+  /** Extra buttons inside the built-in composer (attachments, voice…), on either side of the text field. */
+  renderInputAccessory?: (props: AiInputAccessoryProps) => React.ReactNode;
   /** Replaces the whole tool call card. */
   renderFunctionCall?: (functionCall: AiFunctionCall) => React.ReactNode;
   renderContentBlocks?: (blocks: ContentBlock[], trailingText?: string) => React.ReactNode;

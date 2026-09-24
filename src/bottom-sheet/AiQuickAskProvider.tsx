@@ -36,6 +36,12 @@ export interface AiQuickAskProviderProps {
    * not hidden (gorhom locks list scrolling below the top snap point). Default true.
    */
   expandOnSend?: boolean;
+  /**
+   * Share the conversation with other surfaces using the same id (e.g. an
+   * `AiChatScreen` with `chatId="main"`): opening continues it, closing does not
+   * stop a streaming reply, and "open full page" keeps the stream going.
+   */
+  chatId?: string;
 }
 
 const DEFAULT_SNAP_POINTS = ['58%', '90%'];
@@ -53,11 +59,13 @@ export function AiQuickAskProvider({
   snapPoints = DEFAULT_SNAP_POINTS,
   suggestions,
   expandOnSend = true,
+  chatId,
 }: AiQuickAskProviderProps) {
   const theme = useAiTheme();
   const strings = useAiStrings();
   const title = titleProp ?? strings.assistantTitle;
-  const controller = useAiChatController();
+  const controller = useAiChatController({ chatId });
+  const shared = !!chatId;
   const sheetRef = useRef<BottomSheet>(null);
   const [isActive, setIsActive] = useState(false);
   const [initialIndex, setInitialIndex] = useState(0);
@@ -65,8 +73,9 @@ export function AiQuickAskProvider({
 
   const handleClose = useCallback(() => {
     setIsActive(false);
-    controller.cancelStreaming();
-  }, [controller]);
+    // A shared conversation keeps streaming for the other surfaces.
+    if (!shared) controller.cancelStreaming();
+  }, [controller, shared]);
 
   const close = useCallback(() => {
     sheetRef.current?.close();
@@ -82,13 +91,13 @@ export function AiQuickAskProvider({
 
   const open = useCallback(
     (options?: AiQuickAskOpenOptions) => {
-      controller.startNewConversation();
+      if (options?.reset ?? !shared) controller.startNewConversation();
       const initialMessage = options?.initialMessage?.trim();
       setInitialIndex(initialMessage && expandOnSend ? topIndex : 0);
       setIsActive(true);
       if (initialMessage) void controller.sendMessage(initialMessage);
     },
-    [controller, expandOnSend, topIndex]
+    [controller, expandOnSend, shared, topIndex]
   );
 
   useEffect(() => {

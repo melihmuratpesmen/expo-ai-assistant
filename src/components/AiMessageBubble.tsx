@@ -5,7 +5,8 @@ import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiSlots } from '../provider/slots';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { spacing, radius, fontSize } from '../theme/tokens';
-import type { AiChatMessage } from '../types/aiChat';
+import type { AiChatMessage, AiMessageFeedback } from '../types/aiChat';
+import type { AiSuggestion } from '../types/aiContext';
 import { AiFunctionCallCard } from './AiFunctionCallCard';
 import { AiMessageContent } from './AiMessageContent';
 import { AiMarkdownText } from './AiMarkdownText';
@@ -13,12 +14,20 @@ import { AiTypingIndicator } from './AiTypingIndicator';
 import { AiMessageActions } from './AiMessageActions';
 import { AiReasoningBadge } from './AiReasoningBadge';
 import { AiText } from './AiText';
+import { AiFollowUpSuggestions } from './AiFollowUpSuggestions';
 
 export interface AiMessageBubbleProps {
   message: AiChatMessage;
-  /** Show regenerate control (typically last assistant message). */
+  /** Show regenerate / retry (typically on the latest assistant message). */
   showRegenerate?: boolean;
   onRegenerate?: () => void;
+  /** Shows "Edit" on user messages. */
+  onEdit?: (message: AiChatMessage) => void;
+  /** Shows 👍 / 👎 on assistant messages. */
+  onFeedback?: (message: AiChatMessage, feedback: AiMessageFeedback) => void;
+  /** Render `message.suggestions` as follow-up chips (typically the latest reply only). */
+  showSuggestions?: boolean;
+  onSelectSuggestion?: (suggestion: AiSuggestion) => void;
 }
 
 function computeTrailingText(content: string, hasBlocks: boolean): string | undefined {
@@ -32,6 +41,10 @@ function AiMessageBubbleImpl({
   message,
   showRegenerate = false,
   onRegenerate,
+  onEdit,
+  onFeedback,
+  showSuggestions = false,
+  onSelectSuggestion,
 }: AiMessageBubbleProps) {
   const theme = useAiTheme();
   const slots = useAiSlots();
@@ -63,7 +76,7 @@ function AiMessageBubbleImpl({
               {message.content}
             </AiText>
           </View>
-          <AiMessageActions message={message} />
+          <AiMessageActions message={message} onEdit={onEdit} />
         </View>
       </View>
     );
@@ -138,7 +151,12 @@ function AiMessageBubbleImpl({
           message={message}
           showRegenerate={showRegenerate}
           onRegenerate={onRegenerate}
+          onFeedback={onFeedback}
         />
+
+        {showSuggestions && onSelectSuggestion && message.suggestions?.length ? (
+          <AiFollowUpSuggestions suggestions={message.suggestions} onSelect={onSelectSuggestion} />
+        ) : null}
       </View>
     </View>
   );

@@ -98,6 +98,15 @@ export const AiFunctionCallCard: React.FC<AiFunctionCallCardProps> = ({ function
               {statusVisual.label}
             </AiText>
           </View>
+          {status === 'error' && !!functionCall.error && (
+            <AiText
+              variant="caption"
+              style={[styles.reasoning, { color: theme.colors.error.DEFAULT }]}
+              numberOfLines={3}
+            >
+              {functionCall.error}
+            </AiText>
+          )}
           {!!reasoning && status === 'executing' && (
             <AiText
               variant="caption"

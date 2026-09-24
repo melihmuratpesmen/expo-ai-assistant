@@ -92,3 +92,111 @@ describe('AiChatController', () => {
     expect(other).not.toHaveBeenCalled();
   });
 });
+
+describe('AiChatController 0.3 features', () => {
+  function controlled(callbacks = {}, getContext?: () => Record<string, unknown>) {
+    const streams: Array<{
+      params: AiTransportStreamParams;
+      finish: (text: string, extra?: object) => void;
+    }> = [];
+    const transport: AiTransport = {
+      streamChat: params =>
+        new Promise(resolve => {
+          streams.push({
+            params,
+            finish: (text, extra = {}) => resolve({ text, conversationId: 'c1', ...extra }),
+          });
+        }),
+    };
+    const controller = new AiChatController({
+      getTransport: () => transport,
+      getStrings: () => defaultStrings,
+      getCallbacks: () => callbacks,
+      getContext,
+      scheduleFlush: flush => flush(),
+    });
+    return { controller, streams };
+  }
+
+  async function reply(
+    controller: AiChatController,
+    streams: ReturnType<typeof controlled>['streams'],
+    text: string,
+    answer: string,
+    extra?: object
+  ) {
+    const sending = controller.sendMessage(text);
+    streams[streams.length - 1].finish(answer, extra);
+    await sending;
+  }
+
+  it('edits a user message and resends from there', async () => {
+    const { controller, streams } = controlled();
+    await reply(controller, streams, 'First', 'One');
+    await reply(controller, streams, 'Second', 'Two');
+    const secondUser = controller.getSnapshot().messages[2];
+
+    controller.startEdit(secondUser.id);
+    expect(controller.getSnapshot().editing).toEqual({ messageId: secondUser.id, text: 'Second' });
+
+    const sending = controller.submitEdit('Second, but better');
+    expect(controller.getSnapshot().editing).toBeNull();
+    expect(streams[2].params.messages.map(m => m.content)).toEqual(['First', 'One']);
+    expect(streams[2].params.userMessage).toBe('Second, but better');
+    streams[2].finish('Better two');
+    await sending;
+    expect(controller.getSnapshot().messages.map(m => m.content)).toEqual([
+      'First',
+      'One',
+      'Second, but better',
+      'Better two',
+    ]);
+  });
+
+  it('toggles feedback and reports it', async () => {
+    const onFeedback = jest.fn();
+    const { controller, streams } = controlled({ onFeedback });
+    await reply(controller, streams, 'Hi', 'Hello');
+    const assistant = controller.getSnapshot().messages[1];
+
+    controller.setFeedback(assistant.id, 'up');
+    expect(controller.getSnapshot().messages[1].feedback).toBe('up');
+    controller.setFeedback(assistant.id, 'up');
+    expect(controller.getSnapshot().messages[1].feedback).toBeUndefined();
+    expect(onFeedback).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ feedback: 'up' }),
+      'up'
+    );
+    expect(onFeedback).toHaveBeenNthCalledWith(2, expect.anything(), null);
+  });
+
+  it('records tool errors, suggestions, usage and context', async () => {
+    const onMessageComplete = jest.fn();
+    const { controller, streams } = controlled({ onMessageComplete }, () => ({ screen: 'Home' }));
+    const sending = controller.sendMessage('Go');
+    const { handlers, context } = streams[0].params;
+    expect(context).toEqual({ screen: 'Home' });
+
+    handlers.onToolStart?.({ id: 't', name: 'lookup' });
+    handlers.onToolError?.({ id: 't', name: 'lookup', error: 'Not found' });
+    handlers.onSuggestions?.([{ id: 's', label: 'More', prompt: 'Tell me more' }]);
+    streams[0].finish('Done', { usage: { totalTokens: 12 } });
+    await sending;
+
+    const message = controller.getSnapshot().messages[1];
+    expect(message.functionCalls).toEqual([
+      {
+        id: 't',
+        name: 'lookup',
+        status: 'error',
+        error: 'Not found',
+        label: undefined,
+        reasoning: undefined,
+      },
+    ]);
+    expect(message.suggestions).toEqual([{ id: 's', label: 'More', prompt: 'Tell me more' }]);
+    expect(message.usage).toEqual({ totalTokens: 12 });
+    expect(onMessageComplete).toHaveBeenCalledWith(expect.objectContaining({ content: 'Done' }));
+  });
+});

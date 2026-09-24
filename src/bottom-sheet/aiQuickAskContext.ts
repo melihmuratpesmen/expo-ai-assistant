@@ -5,6 +5,11 @@ import { useAiChatFromController, type UseAiChatResult } from '../hooks/useAiCha
 export interface AiQuickAskOpenOptions {
   /** Sent as the first user message after the sheet opens. */
   initialMessage?: string;
+  /**
+   * Start a new conversation before opening. Default `true`, or `false` when
+   * the provider shares a conversation through `chatId`.
+   */
+  reset?: boolean;
 }
 
 /** Sheet controls without chat state — components using it do not re-render while replies stream. */

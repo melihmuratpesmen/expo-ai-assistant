@@ -1,7 +1,14 @@
 import type { AiStrings } from '../i18n/strings';
 import type { AiAssistantCallbacks } from '../provider/slots';
 import type { AiTransport } from '../transport/types';
-import type { AiChatMessage, AiFunctionCall } from '../types/aiChat';
+import type { AiChatMessage, AiFunctionCall, AiMessageFeedback } from '../types/aiChat';
+
+export interface AiChatEditingState {
+  /** The user message being edited. */
+  messageId: string;
+  /** Its original text (prefills the composer). */
+  text: string;
+}
 
 export interface AiChatState {
   messages: AiChatMessage[];
@@ -9,6 +16,8 @@ export interface AiChatState {
   isLoadingHistory: boolean;
   error: string | null;
   conversationId: string | null;
+  /** Set while a user message is being edited; sending replaces it and everything after it. */
+  editing: AiChatEditingState | null;
 }
 
 export interface AiChatControllerOptions {
@@ -16,6 +25,8 @@ export interface AiChatControllerOptions {
   getTransport: () => AiTransport;
   getCallbacks?: () => AiAssistantCallbacks;
   getStrings: () => AiStrings;
+  /** App context attached to each request (`AiTransportStreamParams.context`). */
+  getContext?: () => Record<string, unknown> | undefined;
   conversationId?: string | null;
   /**
    * Schedules a flush of buffered stream deltas. Deltas are applied at most
@@ -95,6 +106,7 @@ export class AiChatController {
       isLoadingHistory: false,
       error: null,
       conversationId: options.conversationId ?? null,
+      editing: null,
     };
   }
 
@@ -126,6 +138,58 @@ export class AiChatController {
       assistantId: nextLocalId('assistant'),
       appendUserMessage: userMessage,
     });
+  };
+
+  /** Put a user message into edit mode (the composer is prefilled with its text). */
+  startEdit = (messageId: string): void => {
+    if (this.state.isStreaming) return;
+    this.foldPending();
+    const message = this.state.messages.find(m => m.id === messageId && m.role === 'user');
+    if (!message) return;
+    this.update({ editing: { messageId, text: message.content } });
+  };
+
+  cancelEdit = (): void => {
+    if (this.state.editing) this.update({ editing: null });
+  };
+
+  /**
+   * Replace the message being edited (and every turn after it) with `text`
+   * and ask again. Without an active edit this is `sendMessage`.
+   */
+  submitEdit = async (text: string): Promise<void> => {
+    const { editing } = this.state;
+    if (!editing) return this.sendMessage(text);
+    const trimmed = text.trim();
+    if (!trimmed || this.state.isStreaming) return;
+
+    this.foldPending();
+    const index = this.state.messages.findIndex(m => m.id === editing.messageId);
+    const prior = index >= 0 ? this.state.messages.slice(0, index) : this.state.messages;
+    this.update({ messages: prior, editing: null });
+
+    await this.runStream({
+      priorMessages: prior,
+      userMessageText: trimmed,
+      assistantId: nextLocalId('assistant'),
+      appendUserMessage: {
+        id: nextLocalId('user'),
+        role: 'user',
+        content: trimmed,
+        createdAt: Date.now(),
+        status: 'sent',
+      },
+    });
+  };
+
+  /** Rate an assistant reply. Setting the current rating again clears it. */
+  setFeedback = (messageId: string, feedback: AiMessageFeedback | null): void => {
+    this.foldPending();
+    const message = this.state.messages.find(m => m.id === messageId && m.role === 'assistant');
+    if (!message) return;
+    const next = feedback === message.feedback ? undefined : (feedback ?? undefined);
+    this.patchMessage(messageId, { feedback: next });
+    this.callbacks.onFeedback?.({ ...message, feedback: next }, next ?? null);
   };
 
   /** Re-run the last user turn, replacing the reply after it. */
@@ -181,7 +245,13 @@ export class AiChatController {
     this.abortHistoryLoad();
     this.pendingPatches.clear();
     this.loadedSessionId = null;
-    this.update({ messages: [], conversationId: null, error: null, isLoadingHistory: false });
+    this.update({
+      messages: [],
+      conversationId: null,
+      error: null,
+      isLoadingHistory: false,
+      editing: null,
+    });
   };
 
   /** Load a persisted conversation through `transport.getHistory` (no-op if already loaded). */
@@ -201,7 +271,12 @@ export class AiChatController {
       this.cancelStreaming();
       this.pendingPatches.clear();
       this.loadedSessionId = sessionId;
-      this.update({ messages: history.messages, conversationId: history.sessionId, error: null });
+      this.update({
+        messages: history.messages,
+        conversationId: history.sessionId,
+        error: null,
+        editing: null,
+      });
     } catch (err) {
       if (controller.signal.aborted || isAbortError(err)) return;
       const message = err instanceof Error ? err.message : this.options.getStrings().errorHistory;
@@ -337,6 +412,7 @@ export class AiChatController {
         messages: toTransportHistory(priorMessages),
         userMessage: userMessageText,
         conversationId: currentConversationId,
+        context: this.options.getContext?.(),
         signal: controller.signal,
         handlers: {
           onTextDelta: (_delta, snapshot) => {
@@ -379,6 +455,25 @@ export class AiChatController {
             this.patchMessage(assistantId, { functionCalls });
             this.callbacks.onToolComplete?.(completed);
           },
+          onToolError: tool => {
+            if (isStale() || !tool.id) return;
+            const existing = functionCalls.find(fc => fc.id === tool.id);
+            const failed: AiFunctionCall = {
+              ...(existing ?? { id: tool.id, name: tool.name }),
+              status: 'error',
+              error: tool.error,
+            };
+            functionCalls = existing
+              ? functionCalls.map(fc => (fc.id === tool.id ? failed : fc))
+              : [...functionCalls, failed];
+            this.patchMessage(assistantId, { functionCalls });
+          },
+          onSuggestions: suggestions => {
+            if (isStale()) return;
+            this.patchMessage(assistantId, {
+              suggestions: suggestions.length > 0 ? suggestions : undefined,
+            });
+          },
           onError: message => {
             if (isStale()) return;
             reportError(message);
@@ -400,12 +495,16 @@ export class AiChatController {
       // If the user stopped the stream, cancelStreaming already finalized the message.
       if (controller.signal.aborted) return;
 
+      const finalId = result.messageId ?? assistantId;
       this.patchMessage(assistantId, {
         status: 'sent',
-        id: result.messageId ?? assistantId,
+        id: finalId,
         content: result.text,
         functionCalls: functionCalls.length > 0 ? functionCalls : undefined,
+        usage: result.usage,
       });
+      const completed = this.state.messages.find(m => m.id === finalId);
+      if (completed) this.callbacks.onMessageComplete?.(completed);
     } catch (err) {
       if (isAbortError(err) || isStale()) return;
       const message =

@@ -29,6 +29,12 @@ export interface AiChatModalProviderProps {
   presentation?: 'card' | 'fullscreen';
   /** Empty-state suggestions (defaults to `DEFAULT_SUGGESTIONS`). */
   suggestions?: AiSuggestion[];
+  /**
+   * Share the conversation with other surfaces using the same id (e.g. an
+   * `AiChatScreen` with `chatId="main"`): opening continues it, closing does not
+   * stop a streaming reply, and "open full page" keeps the stream going.
+   */
+  chatId?: string;
 }
 
 /**
@@ -41,18 +47,21 @@ export function AiChatModalProvider({
   title: titleProp,
   presentation = 'card',
   suggestions,
+  chatId,
 }: AiChatModalProviderProps) {
   const theme = useAiTheme();
   const strings = useAiStrings();
   const insets = useSafeAreaInsets();
   const title = titleProp ?? strings.assistantTitle;
-  const controller = useAiChatController();
+  const controller = useAiChatController({ chatId });
+  const shared = !!chatId;
   const [isActive, setIsActive] = useState(false);
 
   const close = useCallback(() => {
     setIsActive(false);
-    controller.cancelStreaming();
-  }, [controller]);
+    // A shared conversation keeps streaming for the other surfaces.
+    if (!shared) controller.cancelStreaming();
+  }, [controller, shared]);
 
   const continueToFullChat = useCallback(() => {
     const { conversationId } = controller.getSnapshot();
@@ -62,12 +71,12 @@ export function AiChatModalProvider({
 
   const open = useCallback(
     (options?: AiChatModalOpenOptions) => {
-      controller.startNewConversation();
+      if (options?.reset ?? !shared) controller.startNewConversation();
       setIsActive(true);
       const initialMessage = options?.initialMessage?.trim();
       if (initialMessage) void controller.sendMessage(initialMessage);
     },
-    [controller]
+    [controller, shared]
   );
 
   const value = useMemo<AiChatModalControls>(

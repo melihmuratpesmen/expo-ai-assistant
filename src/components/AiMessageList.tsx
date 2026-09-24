@@ -27,7 +27,8 @@ import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { useLatestRef } from '../lib/useLatestRef';
 import { spacing } from '../theme/tokens';
-import type { AiChatMessage } from '../types/aiChat';
+import type { AiChatMessage, AiMessageFeedback } from '../types/aiChat';
+import type { AiSuggestion } from '../types/aiContext';
 import { AiMessageBubble } from './AiMessageBubble';
 
 type MessageFlatListProps = FlatListProps<AiChatMessage>;
@@ -36,8 +37,14 @@ export interface AiMessageListProps {
   messages: AiChatMessage[];
   /** Hides regenerate while a reply is streaming. */
   isStreaming?: boolean;
-  /** Shows a regenerate action under the latest assistant reply. */
+  /** Shows a regenerate (or retry) action under the latest assistant reply. */
   onRegenerate?: () => void;
+  /** Shows "Edit" on user messages (hidden while streaming). */
+  onEditMessage?: (message: AiChatMessage) => void;
+  /** Shows 👍 / 👎 under assistant replies. */
+  onFeedback?: (message: AiChatMessage, feedback: AiMessageFeedback) => void;
+  /** Shows the latest reply's `suggestions` as follow-up chips. */
+  onSelectSuggestion?: (suggestion: AiSuggestion) => void;
   style?: StyleProp<ViewStyle>;
   contentContainerStyle?: StyleProp<ViewStyle>;
   ListHeaderComponent?: MessageFlatListProps['ListHeaderComponent'];
@@ -78,6 +85,9 @@ export const AiMessageList = forwardRef<AiMessageListHandle, AiMessageListProps>
       messages,
       isStreaming = false,
       onRegenerate,
+      onEditMessage,
+      onFeedback,
+      onSelectSuggestion,
       style,
       contentContainerStyle,
       ListHeaderComponent,
@@ -219,16 +229,58 @@ export const AiMessageList = forwardRef<AiMessageListHandle, AiMessageListProps>
       void onRegenerateRef.current?.();
     }, [onRegenerateRef]);
 
-    const canRegenerate = !!onRegenerate && !isStreaming;
+    // Stable wrappers so memoized bubbles do not re-render when handlers change identity.
+    const onEditRef = useLatestRef(onEditMessage);
+    const onFeedbackRef = useLatestRef(onFeedback);
+    const onSelectSuggestionRef = useLatestRef(onSelectSuggestion);
+    const handleEdit = useCallback(
+      (message: AiChatMessage) => onEditRef.current?.(message),
+      [onEditRef]
+    );
+    const handleFeedback = useCallback(
+      (message: AiChatMessage, feedback: AiMessageFeedback) =>
+        onFeedbackRef.current?.(message, feedback),
+      [onFeedbackRef]
+    );
+    const handleSelectSuggestion = useCallback(
+      (suggestion: AiSuggestion) => {
+        atBottomRef.current = true;
+        onSelectSuggestionRef.current?.(suggestion);
+      },
+      [onSelectSuggestionRef]
+    );
+
+    const idle = !isStreaming;
+    const canRegenerate = !!onRegenerate && idle;
+    const canEdit = !!onEditMessage && idle;
+    const canRate = !!onFeedback;
+    const canFollowUp = !!onSelectSuggestion && idle;
     const renderItem = useCallback<ListRenderItem<AiChatMessage>>(
-      ({ item }) => (
-        <AiMessageBubble
-          message={item}
-          showRegenerate={canRegenerate && item.id === lastAssistantId}
-          onRegenerate={handleRegenerate}
-        />
-      ),
-      [canRegenerate, handleRegenerate, lastAssistantId]
+      ({ item }) => {
+        const isLatestReply = item.id === lastAssistantId;
+        return (
+          <AiMessageBubble
+            message={item}
+            showRegenerate={canRegenerate && isLatestReply}
+            onRegenerate={handleRegenerate}
+            onEdit={canEdit ? handleEdit : undefined}
+            onFeedback={canRate ? handleFeedback : undefined}
+            showSuggestions={canFollowUp && isLatestReply}
+            onSelectSuggestion={handleSelectSuggestion}
+          />
+        );
+      },
+      [
+        canEdit,
+        canFollowUp,
+        canRate,
+        canRegenerate,
+        handleEdit,
+        handleFeedback,
+        handleRegenerate,
+        handleSelectSuggestion,
+        lastAssistantId,
+      ]
     );
 
     const List = (FlatListComponent ?? FlatList) as React.ComponentType<

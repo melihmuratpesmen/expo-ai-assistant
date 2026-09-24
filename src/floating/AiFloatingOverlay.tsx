@@ -25,6 +25,8 @@ export interface AiFloatingOverlayProps {
   onExpand?: (draft?: string) => void;
   /** Optional navigation to full-page chat from the floating panel. */
   onOpenFullPage?: (conversationId: string | null) => void;
+  /** Share the built-in panel's conversation with other surfaces using the same id. */
+  chatId?: string;
 }
 
 /**
@@ -35,13 +37,14 @@ export function AiFloatingOverlay({
   visible = true,
   onExpand,
   onOpenFullPage,
+  chatId,
 }: AiFloatingOverlayProps) {
   const insets = useSafeAreaInsets();
   const strings = useAiStrings();
   const [overlayLayout, setOverlayLayout] = useState<AiOverlayLayout | null>(null);
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
-  const controller = useAiChatController();
+  const controller = useAiChatController({ chatId });
   const [buttonAnchor, setButtonAnchor] = useState<AiButtonPoint>(() =>
     getDefaultAiButtonPosition(insets)
   );
@@ -70,17 +73,17 @@ export function AiFloatingOverlay({
         onExpand(trimmed || undefined);
         return;
       }
-      controller.startNewConversation();
+      if (!chatId) controller.startNewConversation();
       if (trimmed) void controller.sendMessage(trimmed);
       setPanelVisible(true);
     },
-    [closeBubble, controller, onExpand]
+    [chatId, closeBubble, controller, onExpand]
   );
 
   const closePanel = useCallback(() => {
     setPanelVisible(false);
-    controller.cancelStreaming();
-  }, [controller]);
+    if (!chatId) controller.cancelStreaming();
+  }, [chatId, controller]);
 
   const handleBubbleSend = useCallback(
     (text: string) => {

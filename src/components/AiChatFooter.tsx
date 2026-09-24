@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
-import { StyleSheet, View, type TextInputProps } from 'react-native';
+import { Pressable, StyleSheet, View, type TextInputProps } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AiChatController } from '../core/AiChatController';
@@ -12,11 +13,18 @@ import { fontSize, spacing } from '../theme/tokens';
 import { AiChatInput } from './AiChatInput';
 import { AiText } from './AiText';
 
-/** `slots.renderInput` when provided, otherwise `AiChatInput`. */
+/** `slots.renderInput` when provided, otherwise `AiChatInput` (with `renderInputAccessory`). */
 export function AiComposer(props: AiInputSlotProps) {
-  const { renderInput } = useAiSlots();
+  const { renderInput, renderInputAccessory } = useAiSlots();
   if (renderInput) return <>{renderInput(props)}</>;
-  return <AiChatInput {...props} />;
+  const isStreaming = !!props.isStreaming;
+  return (
+    <AiChatInput
+      {...props}
+      leftAccessory={renderInputAccessory?.({ side: 'left', isStreaming })}
+      rightAccessory={renderInputAccessory?.({ side: 'right', isStreaming })}
+    />
+  );
 }
 
 export interface AiChatFooterProps {
@@ -54,6 +62,7 @@ export function AiChatFooter({
   const insets = useSafeAreaInsets();
   const isStreaming = useAiChatSelector(controller, state => state.isStreaming);
   const error = useAiChatSelector(controller, state => state.error);
+  const editing = useAiChatSelector(controller, state => state.editing);
   const keyboardLiftStyle = useScreenBottomKeyboardLift(
     liftWithKeyboard,
     bottomInset && bottomInset > 0 ? bottomInset : undefined
@@ -61,7 +70,8 @@ export function AiChatFooter({
 
   const handleSend = useCallback(
     (text: string) => {
-      void controller.sendMessage(text);
+      // submitEdit falls back to sendMessage when nothing is being edited.
+      void controller.submitEdit(text);
     },
     [controller]
   );
@@ -86,7 +96,31 @@ export function AiChatFooter({
             {error}
           </AiText>
         ) : null}
+        {editing ? (
+          <View style={styles.editingBar}>
+            <Ionicons name="create-outline" size={14} color={theme.colors.primary.DEFAULT} />
+            <AiText
+              variant="caption"
+              numberOfLines={1}
+              style={[styles.editingText, { color: theme.colors.text[500] }]}
+            >
+              {strings.editingMessage}
+            </AiText>
+            <Pressable
+              onPress={controller.cancelEdit}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={strings.cancelEdit}
+            >
+              <Ionicons name="close" size={16} color={theme.colors.text[500]} />
+            </Pressable>
+          </View>
+        ) : null}
         <AiComposer
+          // Remount with the edited text as the new starting value.
+          key={editing?.messageId ?? 'compose'}
+          defaultValue={editing?.text}
+          autoFocus={!!editing}
           onSend={handleSend}
           disabled={false}
           placeholder={placeholder}
@@ -118,6 +152,16 @@ const styles = StyleSheet.create({
   },
   bordered: {
     borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  editingBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1.5],
+    marginHorizontal: spacing[4],
+    paddingHorizontal: spacing[1],
+  },
+  editingText: {
+    flex: 1,
   },
   error: {
     textAlign: 'center',

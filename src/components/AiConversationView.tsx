@@ -1,7 +1,8 @@
 import React, { useCallback } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import type { AiChatController } from '../core/AiChatController';
-import { useAiChatState } from '../hooks/useAiChat';
+import { useAiChatSelector } from '../hooks/useAiChat';
+import { useAiCallbacks } from '../provider/slots';
 import { useAiTheme } from '../theme/AiThemeContext';
 import type { AiSuggestion } from '../types/aiContext';
 import { AiEmptyStateSlot, type AiEmptyStateProps } from './AiEmptyState';
@@ -30,7 +31,11 @@ export function AiConversationView({
   ...listProps
 }: AiConversationViewProps) {
   const theme = useAiTheme();
-  const { messages, isStreaming, isLoadingHistory } = useAiChatState(controller);
+  // Individual slices: typing in the composer or editing state do not re-render the list.
+  const messages = useAiChatSelector(controller, state => state.messages);
+  const isStreaming = useAiChatSelector(controller, state => state.isStreaming);
+  const isLoadingHistory = useAiChatSelector(controller, state => state.isLoadingHistory);
+  const { onFeedback } = useAiCallbacks();
 
   const handleSelectSuggestion = useCallback(
     (suggestion: AiSuggestion) => {
@@ -66,6 +71,11 @@ export function AiConversationView({
       messages={messages}
       isStreaming={isStreaming}
       onRegenerate={controller.regenerateLastResponse}
+      onEditMessage={message => controller.startEdit(message.id)}
+      onFeedback={
+        onFeedback ? (message, feedback) => controller.setFeedback(message.id, feedback) : undefined
+      }
+      onSelectSuggestion={handleSelectSuggestion}
       ListHeaderComponent={ListHeaderComponent}
       ListEmptyComponent={emptyState}
     />

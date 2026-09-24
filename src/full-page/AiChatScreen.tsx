@@ -22,6 +22,8 @@ export interface AiChatScreenProps {
   onOpenHistory?: () => void;
   /** Space below the screen (e.g. a tab bar) that the keyboard lift should account for. */
   bottomInset?: number;
+  /** Share the conversation with other surfaces using the same id. */
+  chatId?: string;
 }
 
 export function AiChatScreen({
@@ -31,11 +33,12 @@ export function AiChatScreen({
   onBackPress,
   onOpenHistory,
   bottomInset = 0,
+  chatId,
 }: AiChatScreenProps) {
   const theme = useAiTheme();
   const strings = useAiStrings();
   const insets = useSafeAreaInsets();
-  const controller = useAiChatController({ conversationId });
+  const controller = useAiChatController({ conversationId, chatId });
   const title = titleProp ?? strings.assistantTitle;
 
   return (
