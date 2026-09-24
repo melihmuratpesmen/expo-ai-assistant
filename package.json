@@ -1,6 +1,6 @@
 {
   "name": "expo-ai-assistant",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Surface-first AI chat kit for Expo and React Native — pluggable transport (OpenAI-compatible default), full-page, floating, modal, and optional bottom-sheet.",
   "source": "./src/index.ts",
   "main": "./lib/module/index.js",

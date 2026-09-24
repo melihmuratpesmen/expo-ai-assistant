@@ -2,7 +2,9 @@
 
 `expo-ai-assistant` ships **independent presentation surfaces** over a shared core. Surfaces do **not** import each other; host apps compose them when needed.
 
-All surfaces render the same building blocks (`AiConversationView`, `AiMessageList`, `AiChatFooter`), so slots (`renderMessage`, `renderInput`, `renderEmpty`, `toolRenderers`, …), theme tokens and strings behave the same everywhere.
+All surfaces render the same building blocks (`AiConversationView`, `AiMessageList`, `AiChatFooter`), so slots (`renderMessage`, `renderInput`, `renderEmpty`, `toolRenderers`, …), theme tokens, strings and message interactions (edit, retry, feedback, follow-ups) behave the same everywhere.
+
+Every surface accepts a `chatId`. Surfaces with the same id show one shared conversation: opening continues it (`open({ reset: true })` starts over) and closing a modal or sheet does not stop a streaming reply.
 
 ## Core (`expo-ai-assistant`)
 

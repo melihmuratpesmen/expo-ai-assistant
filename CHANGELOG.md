@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.0
+
+**New**
+
+- **OpenAI tool calling** — `tools` on `createOpenAICompatibleTransport` run on the device (`execute`, optional `toFrontendData`), show as tool cards and feed results back to the model; `toolChoice`, `maxToolRoundtrips`
+- OpenAI-compatible transport: `reasoning_content` / `reasoning` deltas, `extraBody`, `includeUsage` (usage on the reply), `timeoutMs`, `formatContext`
+- **`createSseTransport`** — connect any SSE backend by mapping events in `onEvent` (spec-compliant `SseEventParser` exported)
+- **`createAiSdkTransport`** — Vercel AI SDK UI Message Stream routes (text, reasoning, tool parts, `data-suggestions`)
+- **`withLocalHistory(transport, { storage })`** — on-device conversation history (AsyncStorage / MMKV adapter / `createMemoryStorage()`), powering `AiConversationHistoryScreen` without a backend
+- **Shared conversations** — `chatId` on `useAiChat`, `AiChatScreen`, `AiChatModalProvider`, `AiQuickAskProvider` and `AiFloatingOverlay`; `open({ reset })`
+- **Message interactions** — Retry on failed replies, Edit & resend for user messages (`startEdit` / `submitEdit` / `cancelEdit`), 👍 / 👎 via `callbacks.onFeedback`, follow-up chips from `handlers.onSuggestions`
+- **App context** — `context` on `AiAssistantProvider` (object or function) is sent with every request
+- Composer: keeps accepting input while a reply streams, `value` / `onChangeText` / `defaultValue` / `maxLength` / `textInputProps`, `leftAccessory` / `rightAccessory` and `slots.renderInputAccessory`
+- Transport handlers `onToolError` and `onSuggestions`; tool cards show the error text
+- Callbacks `onMessageComplete` and `onFeedback`; message fields `feedback`, `usage`; `AiFunctionCall.error`
+- `AiFollowUpSuggestions` component; mock transport offers follow-up chips (`followUps: false` to disable)
+
+**Changes**
+
+- `AiChatInput` is editable while streaming (the send button stays disabled until the reply ends)
+- `AiConversationView` subscribes to individual state slices, so typing or edit state does not re-render the message list
+
 ## 0.2.0
 
 A structural release: chat state moves into a shared store, every surface renders the same building blocks, and the package ships compiled output. See **Migrating from 0.1** below.

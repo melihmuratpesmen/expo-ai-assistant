@@ -45,7 +45,9 @@ Demo tabs: full page · floating · bottom sheet · modal · history. Local play
 - **Smooth streaming** — tokens are applied once per frame, bubbles are memoized, and surfaces subscribe only to the state they render
 - **Stick-to-bottom list** — follows the reply while you are at the bottom, stops when you scroll up to read, "jump to latest" button
 - **Editable UI** — theme tokens, i18n strings, render slots, custom tool-card renderers, lifecycle callbacks
-- **Tool calls & rich content** — tool cards, tables, key/value data, content blocks (tables, lists, code, alerts, metrics)
+- **Tool calls & rich content** — on-device OpenAI tool calling, tool cards, tables, key/value data, content blocks
+- **Backends** — OpenAI-compatible, Vercel AI SDK routes, any SSE API, or your own transport; optional on-device history
+- **Chat UX** — stop, regenerate / retry, edit & resend, 👍 / 👎 feedback, follow-up suggestion chips, shared conversations across surfaces
 
 ---
 
@@ -159,12 +161,14 @@ Any backend works — implement `streamChat` and call the handlers as data arriv
 import type { AiTransport } from 'expo-ai-assistant';
 
 const transport: AiTransport = {
-  async streamChat({ messages, userMessage, conversationId, signal, handlers }) {
+  async streamChat({ messages, userMessage, conversationId, context, signal, handlers }) {
     // stream from your API…
     handlers.onTextDelta?.(delta, fullTextSoFar);
+    handlers.onReasoningDelta?.(delta, reasoningSoFar);
     handlers.onToolStart?.({ id, name, label });
-    handlers.onToolComplete?.({ id, name, frontendData });
-    return { text: fullText, conversationId: 'server-session-id' };
+    handlers.onToolComplete?.({ id, name, frontendData }); // or onToolError({ id, name, error })
+    handlers.onSuggestions?.([{ id: 'more', label: 'Tell me more', prompt: 'Tell me more' }]);
+    return { text: fullText, conversationId: 'server-session-id', usage };
   },
   // Optional: persisted history for AiConversationHistoryScreen
   listSessions,
@@ -174,6 +178,53 @@ const transport: AiTransport = {
 ```
 
 Contract notes: throw on fatal errors (the hook reports them once), reject with an `AbortError` when `signal` aborts, and treat `messages` as prior context (failed or empty assistant turns are already filtered out).
+
+### SSE APIs and Vercel AI SDK routes
+
+For a backend that streams Server-Sent Events, map its events instead of writing networking code:
+
+```tsx
+import { createSseTransport } from 'expo-ai-assistant';
+
+const transport = createSseTransport({
+  url: 'https://api.example.com/chat',
+  getHeaders: async () => ({ Authorization: `Bearer ${await getToken()}` }),
+  // Default body: { messages: [{ role, content }], message, conversationId, context }
+  onEvent: ({ event, data }, ctx) => {
+    if (data === '[DONE]') return;
+    const json = JSON.parse(data);
+    if (event === 'session') ctx.setConversationId(json.id);
+    if (event === 'token') ctx.text(json.text);
+    if (event === 'tool') ctx.toolStart({ id: json.id, name: json.name });
+    if (event === 'tool_result') ctx.toolComplete({ id: json.id, frontendData: json.data });
+    if (event === 'error') ctx.fail(json.message);
+  },
+});
+```
+
+A route built with the Vercel AI SDK (`streamText(…).toUIMessageStreamResponse()`) works as-is:
+
+```tsx
+import { createAiSdkTransport } from 'expo-ai-assistant';
+
+const transport = createAiSdkTransport({ api: 'https://your-app.com/api/chat' });
+```
+
+Text, reasoning and tool parts render in the chat; a `data-suggestions` part (`data: [{ id, label, prompt }]`) shows follow-up chips.
+
+### Conversation history on the device
+
+Wrap any transport to save completed conversations locally — the history screen then works without a backend:
+
+```tsx
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { withLocalHistory, createOpenAICompatibleTransport } from 'expo-ai-assistant';
+
+const transport = withLocalHistory(createOpenAICompatibleTransport({ … }), {
+  storage: AsyncStorage, // any { getItem, setItem, removeItem }; createMemoryStorage() for tests
+  maxConversations: 50,
+});
+```
 
 ---
 
@@ -266,7 +317,20 @@ function MyChat() {
 
 `AiMessageList` handles memoized bubbles, stick-to-bottom auto-scroll and the "jump to latest" button. `AiConversationView` adds loading and empty states; `AiChatFooter` is the composer with error line, disclaimer and keyboard lift.
 
-### Sharing a conversation / selective subscriptions
+### Sharing a conversation between surfaces
+
+Give surfaces the same `chatId` and they show one conversation. "Open full page" from the modal then continues the same stream instead of reloading history, and closing the modal does not stop a reply:
+
+```tsx
+<AiChatModalProvider chatId="main" onOpenFullPage={() => navigate('Chat')}>…</AiChatModalProvider>
+
+// Chat screen
+<AiChatScreen chatId="main" />
+```
+
+`open()` continues a shared conversation; pass `open({ reset: true })` to start over. Hooks accept it too: `useAiChat({ chatId: 'main' })`.
+
+### Selective subscriptions
 
 Chat state lives in an `AiChatController` (an external store). Create one, pass it around, and subscribe only to what each component renders:
 
@@ -288,7 +352,33 @@ function Messages() {
 
 ## Tool calls & custom renderers
 
-Tool events from the transport (`onToolStart` / `onToolComplete`) render as tool cards. Arrays of objects become a paginated table, objects a key/value list. Register your own card bodies by **tool name** or by the **`type` field** of the tool's `frontendData`:
+### OpenAI tool calling
+
+Tools run on the device; their results go back to the model until it answers, and each call shows as a tool card:
+
+```tsx
+createOpenAICompatibleTransport({
+  baseUrl,
+  model: 'gpt-4o-mini',
+  tools: [
+    {
+      name: 'getOrders',
+      label: 'Recent orders',
+      description: 'List the signed-in user’s recent orders',
+      parameters: { type: 'object', properties: { limit: { type: 'number' } } },
+      execute: async ({ limit = 5 }, { signal }) => api.orders({ limit, signal }),
+      // What the card shows (defaults to the result): arrays of objects become a table.
+      toFrontendData: orders => orders.map(o => ({ id: o.id, total: o.total, status: o.status })),
+    },
+  ],
+});
+```
+
+Throwing from `execute` marks the card as failed and tells the model. `maxToolRoundtrips` (default 5), `toolChoice`, `extraBody` (`max_tokens`, …), `includeUsage` and `timeoutMs` are available too; `reasoning_content` / `reasoning` deltas (DeepSeek, OpenRouter, …) show in the "Thinking" panel.
+
+### Custom card bodies
+
+Tool events from any transport render as tool cards. Arrays of objects become a paginated table, objects a key/value list. Register your own card bodies by **tool name** or by the **`type` field** of the tool's `frontendData`:
 
 ```tsx
 import type { AiToolRenderer } from 'expo-ai-assistant';
@@ -298,19 +388,59 @@ const WeatherCard: AiToolRenderer = ({ data }) => <Weather {...(data as WeatherD
 <AiAssistantProvider config={config} slots={{ toolRenderers: { getWeather: WeatherCard } }}>
 ```
 
-`slots.renderFunctionCall` replaces the whole card. The OpenAI-compatible default transport is text-only for now — see [docs/DEFERRED.md](./docs/DEFERRED.md).
+`slots.renderFunctionCall` replaces the whole card.
+
+---
+
+## Message interactions
+
+| Feature           | How                                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------------------ |
+| Stop / regenerate | Built in; a failed reply shows **Retry**                                                         |
+| Edit & resend     | **Edit** on user messages prefills the composer; sending replaces that turn and everything after |
+| Feedback          | Provide `callbacks.onFeedback(message, 'up' \| 'down' \| null)` to show 👍 / 👎                  |
+| Follow-up chips   | Transports call `handlers.onSuggestions([...])`; chips appear under the latest reply             |
+| Keep typing       | The composer stays editable while a reply streams; sending waits for it                          |
+| Analytics         | `callbacks.onMessageComplete(message)` with final text, tool calls and `usage`                   |
+
+Controller methods for custom UIs: `startEdit(id)`, `submitEdit(text)`, `cancelEdit()`, `setFeedback(id, rating)`.
+
+### App context
+
+Tell the assistant where the user is. `context` is sent with every request (`AiTransportStreamParams.context`); the OpenAI-compatible transport adds it as a system message (customize with `formatContext`):
+
+```tsx
+<AiAssistantProvider
+  config={config}
+  context={() => ({ screen: currentRoute.name, orderId: currentRoute.params?.orderId, locale })}
+/>
+```
+
+### Composer accessories
+
+```tsx
+<AiAssistantProvider
+  config={config}
+  slots={{
+    renderInputAccessory: ({ side }) => (side === 'left' ? <AttachButton /> : <MicButton />),
+  }}
+/>
+```
+
+`AiChatInput` also takes `value` / `onChangeText` (controlled), `defaultValue`, `maxLength`, `textInputProps`, `leftAccessory` and `rightAccessory`.
 
 ---
 
 ## Customization
 
-| Lever       | API                                                                                                                                          |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Theme       | `theme`, `colorScheme` on the provider                                                                                                       |
-| Copy / i18n | `strings` on the provider (`useAiStrings`)                                                                                                   |
-| UI slots    | `slots.renderMessage`, `renderInput`, `renderEmpty`, `renderFunctionCall`, `renderContentBlocks`, `toolRenderers` — honored by every surface |
-| Callbacks   | `callbacks.onMessageSent`, `onStreamStart`, `onStreamEnd`, `onError`, `onToolComplete`, `onConversationCreated`                              |
-| Backend     | `config.transport` or `config.openai`                                                                                                        |
+| Lever       | API                                                                                                                                                                  |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Theme       | `theme`, `colorScheme` on the provider                                                                                                                               |
+| Copy / i18n | `strings` on the provider (`useAiStrings`)                                                                                                                           |
+| UI slots    | `slots.renderMessage`, `renderInput`, `renderInputAccessory`, `renderEmpty`, `renderFunctionCall`, `renderContentBlocks`, `toolRenderers` — honored by every surface |
+| Callbacks   | `callbacks.onMessageSent`, `onStreamStart`, `onStreamEnd`, `onMessageComplete`, `onError`, `onToolComplete`, `onConversationCreated`, `onFeedback`                   |
+| Context     | `context` on the provider (object or function)                                                                                                                       |
+| Backend     | `config.transport` or `config.openai`                                                                                                                                |
 
 ### Theme tokens
 
