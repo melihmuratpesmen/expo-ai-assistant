@@ -45,6 +45,7 @@ export function AiMarkdownText({ children, style }: AiMarkdownTextProps) {
   const theme = useAiTheme();
   const MarkdownView = resolveMarkdown();
 
+  const flatStyle = StyleSheet.flatten(style);
   const markdownStyles = useMemo(
     () => ({
       body: {
@@ -52,6 +53,7 @@ export function AiMarkdownText({ children, style }: AiMarkdownTextProps) {
         fontSize: fontSize.sm,
         lineHeight: 20,
         fontFamily: theme.fontFamily.regular,
+        ...flatStyle,
       },
       strong: { fontFamily: theme.fontFamily.semibold },
       em: { fontStyle: 'italic' as const },
@@ -70,7 +72,7 @@ export function AiMarkdownText({ children, style }: AiMarkdownTextProps) {
       bullet_list: { marginVertical: 4 },
       ordered_list: { marginVertical: 4 },
     }),
-    [theme]
+    [theme, flatStyle]
   );
 
   if (MarkdownView) {

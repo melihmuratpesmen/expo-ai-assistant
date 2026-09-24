@@ -1,5 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -98,77 +99,93 @@ export function AiChatModalProvider({
         onRequestClose={close}
         statusBarTranslucent
       >
-        <View
-          style={[
-            styles.backdrop,
-            !isFullscreen && { backgroundColor: 'rgba(0,0,0,0.45)' },
-            isFullscreen && { backgroundColor: theme.colors.bg.DEFAULT },
-          ]}
-        >
-          {!isFullscreen ? (
-            <Pressable
-              style={StyleSheet.absoluteFill}
-              onPress={close}
-              accessibilityLabel={strings.accessibilityClose}
-            />
-          ) : null}
-
+        {/* Modal content is a separate native root; gestures (e.g. table scroll) need their own handler root on Android. */}
+        <GestureHandlerRootView style={styles.gestureRoot}>
           <View
             style={[
-              isFullscreen ? styles.fullHost : styles.cardHost,
-              {
-                backgroundColor: theme.colors.bg.DEFAULT,
-                ...(isFullscreen
-                  ? {}
-                  : {
-                      marginTop: insets.top + spacing[4],
-                      marginBottom: Math.max(insets.bottom, spacing[4]),
-                      borderColor: theme.colors.border.DEFAULT,
-                    }),
-              },
+              styles.backdrop,
+              !isFullscreen && { backgroundColor: 'rgba(0,0,0,0.45)' },
+              isFullscreen && { backgroundColor: theme.colors.bg.DEFAULT },
             ]}
           >
-            {isFullscreen ? (
-              <AiChatModalBody
-                title={title}
-                onClose={close}
-                onOpenFullPage={onOpenFullPage ? continueToFullChat : undefined}
-                showHeader
+            {!isFullscreen ? (
+              <Pressable
+                style={StyleSheet.absoluteFill}
+                onPress={close}
+                accessibilityLabel={strings.accessibilityClose}
               />
-            ) : (
-              <View style={styles.cardInner}>
-                <View
-                  style={[styles.cardHeader, { borderBottomColor: theme.colors.border.DEFAULT }]}
-                >
-                  <AiText weight="semibold">{title}</AiText>
-                  <View style={styles.headerActions}>
-                    {onOpenFullPage ? (
-                      <Pressable onPress={continueToFullChat} hitSlop={8}>
-                        <Ionicons
-                          name="expand-outline"
-                          size={22}
-                          color={theme.colors.primary.DEFAULT}
-                        />
+            ) : null}
+
+            <View
+              style={[
+                isFullscreen ? styles.fullHost : styles.cardHost,
+                {
+                  backgroundColor: theme.colors.bg.DEFAULT,
+                  ...(isFullscreen
+                    ? {}
+                    : {
+                        marginTop: insets.top + spacing[4],
+                        marginBottom: Math.max(insets.bottom, spacing[4]),
+                        borderColor: theme.colors.border.DEFAULT,
+                      }),
+                },
+              ]}
+            >
+              {isFullscreen ? (
+                <AiChatModalBody
+                  title={title}
+                  onClose={close}
+                  onOpenFullPage={onOpenFullPage ? continueToFullChat : undefined}
+                  showHeader
+                />
+              ) : (
+                <View style={styles.cardInner}>
+                  <View
+                    style={[styles.cardHeader, { borderBottomColor: theme.colors.border.DEFAULT }]}
+                  >
+                    <AiText weight="semibold">{title}</AiText>
+                    <View style={styles.headerActions}>
+                      {onOpenFullPage ? (
+                        <Pressable
+                          onPress={continueToFullChat}
+                          hitSlop={8}
+                          accessibilityRole="button"
+                          accessibilityLabel={strings.accessibilityExpand}
+                        >
+                          <Ionicons
+                            name="expand-outline"
+                            size={22}
+                            color={theme.colors.primary.DEFAULT}
+                          />
+                        </Pressable>
+                      ) : null}
+                      <Pressable
+                        onPress={close}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={strings.accessibilityClose}
+                      >
+                        <Ionicons name="close" size={22} color={theme.colors.text[500]} />
                       </Pressable>
-                    ) : null}
-                    <Pressable onPress={close} hitSlop={8}>
-                      <Ionicons name="close" size={22} color={theme.colors.text[500]} />
-                    </Pressable>
+                    </View>
+                  </View>
+                  <View style={styles.cardBody}>
+                    <AiChatModalBody onClose={close} showHeader={false} />
                   </View>
                 </View>
-                <View style={styles.cardBody}>
-                  <AiChatModalBody onClose={close} showHeader={false} />
-                </View>
-              </View>
-            )}
+              )}
+            </View>
           </View>
-        </View>
+        </GestureHandlerRootView>
       </Modal>
     </AiChatModalContext.Provider>
   );
 }
 
 const styles = StyleSheet.create({
+  gestureRoot: {
+    flex: 1,
+  },
   backdrop: {
     flex: 1,
     justifyContent: 'center',

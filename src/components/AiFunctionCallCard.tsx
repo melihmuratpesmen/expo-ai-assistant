@@ -71,6 +71,8 @@ export const AiFunctionCallCard: React.FC<AiFunctionCallCardProps> = ({ function
         onPress={() => hasData && setExpanded(prev => !prev)}
         disabled={!hasData}
         style={styles.header}
+        accessibilityRole={hasData ? 'button' : undefined}
+        accessibilityState={hasData ? { expanded } : undefined}
       >
         <View
           style={[

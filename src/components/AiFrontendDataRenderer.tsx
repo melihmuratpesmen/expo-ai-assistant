@@ -76,6 +76,7 @@ function TypedObjectSummary({ data }: { data: Record<string, unknown> }) {
 
 function AiKeyValueList({ data }: { data: Record<string, unknown> }) {
   const theme = useAiTheme();
+  const strings = useAiStrings();
   const entries = Object.entries(data).filter(
     ([, value]) => value !== null && value !== undefined
   );
@@ -97,7 +98,7 @@ function AiKeyValueList({ data }: { data: Record<string, unknown> }) {
             variant="caption"
             style={[styles.kvValue, { color: theme.colors.text.DEFAULT }]}
           >
-            {formatCellValue(value, key)}
+            {formatCellValue(value, key, strings)}
           </AiText>
         </View>
       ))}

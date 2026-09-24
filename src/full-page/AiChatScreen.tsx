@@ -143,7 +143,13 @@ export function AiChatScreen({
       <View style={[styles.header, { paddingTop: insets.top, borderBottomColor: theme.colors.border.DEFAULT }]}>
         <View style={styles.headerLeft}>
           {onBackPress ? (
-            <Pressable onPress={onBackPress} hitSlop={8} style={styles.headerIcon}>
+            <Pressable
+              onPress={onBackPress}
+              hitSlop={8}
+              style={styles.headerIcon}
+              accessibilityRole="button"
+              accessibilityLabel={strings.accessibilityBack}
+            >
               <Ionicons name="chevron-back" size={24} color={theme.colors.text.DEFAULT} />
             </Pressable>
           ) : null}
@@ -152,11 +158,23 @@ export function AiChatScreen({
           </AiText>
         </View>
         <View style={styles.headerActions}>
-          <Pressable onPress={startNewConversation} hitSlop={8} style={styles.headerIcon}>
+          <Pressable
+            onPress={startNewConversation}
+            hitSlop={8}
+            style={styles.headerIcon}
+            accessibilityRole="button"
+            accessibilityLabel={strings.newConversation}
+          >
             <Ionicons name="create-outline" size={22} color={theme.colors.text.DEFAULT} />
           </Pressable>
           {onOpenHistory ? (
-            <Pressable onPress={onOpenHistory} hitSlop={8} style={styles.headerIcon}>
+            <Pressable
+              onPress={onOpenHistory}
+              hitSlop={8}
+              style={styles.headerIcon}
+              accessibilityRole="button"
+              accessibilityLabel={strings.historyTitle}
+            >
               <Ionicons name="time-outline" size={22} color={theme.colors.text.DEFAULT} />
             </Pressable>
           ) : null}

@@ -6,7 +6,7 @@ import {
   Pressable,
   Keyboard,
   Platform,
-  Dimensions,
+  useWindowDimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
@@ -22,7 +22,7 @@ import type { AiChatMessage } from '../types/aiChat';
 import type { AiButtonPoint } from './aiButtonPosition';
 import { AI_BUTTON_SIZE } from './aiButtonPosition';
 
-const PANEL_WIDTH = Math.min(360, Dimensions.get('window').width - 32);
+const PANEL_MAX_WIDTH = 360;
 const PANEL_HEIGHT = 420;
 
 export interface AiFloatingChatPanelProps {
@@ -60,7 +60,9 @@ export function AiFloatingChatPanel({
   const sentInitialRef = useRef(false);
   const lastAssistantId = [...messages].reverse().find(m => m.role === 'assistant')?.id;
   const keyboardOpenHeight = useKeyboardOpenHeight();
-  const screen = Dimensions.get('window');
+  const screen = useWindowDimensions();
+  const PANEL_WIDTH = Math.min(PANEL_MAX_WIDTH, screen.width - 32);
+  const screenHeight = screen.height;
   const panelLeft = Math.min(
     Math.max(anchor.x + AI_BUTTON_SIZE - PANEL_WIDTH, spacing[4]),
     screen.width - PANEL_WIDTH - spacing[4]
@@ -72,7 +74,7 @@ export function AiFloatingChatPanel({
   const panelBottom = panelTop + PANEL_HEIGHT;
   const keyboardLiftStyle = useAnimatedStyle(() => {
     if (!visible) return { transform: [{ translateY: 0 }] };
-    const visibleBottom = screen.height - keyboardOpenHeight.value;
+    const visibleBottom = screenHeight - keyboardOpenHeight.value;
     const lift = Math.max(0, panelBottom + 12 - visibleBottom);
     return { transform: [{ translateY: -lift }] };
   });
@@ -114,6 +116,7 @@ export function AiFloatingChatPanel({
         {
           left: panelLeft,
           top: panelTop,
+          width: PANEL_WIDTH,
           backgroundColor: theme.colors.bg.DEFAULT,
           borderColor: theme.colors.border.DEFAULT,
         },
@@ -126,12 +129,18 @@ export function AiFloatingChatPanel({
             <Pressable
               onPress={() => onExpandFullPage(conversationId)}
               hitSlop={8}
+              accessibilityRole="button"
               accessibilityLabel={strings.accessibilityExpand}
             >
               <Ionicons name="expand-outline" size={20} color={theme.colors.primary.DEFAULT} />
             </Pressable>
           ) : null}
-          <Pressable onPress={onClose} hitSlop={8} accessibilityLabel={strings.accessibilityClose}>
+          <Pressable
+            onPress={onClose}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={strings.accessibilityClose}
+          >
             <Ionicons name="close" size={20} color={theme.colors.text[500]} />
           </Pressable>
         </View>
@@ -184,7 +193,6 @@ export function AiFloatingChatPanel({
 const styles = StyleSheet.create({
   panel: {
     position: 'absolute',
-    width: PANEL_WIDTH,
     height: PANEL_HEIGHT,
     borderRadius: radius.xl,
     borderWidth: 1,

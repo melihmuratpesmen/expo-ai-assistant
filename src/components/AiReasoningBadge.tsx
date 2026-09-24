@@ -37,6 +37,7 @@ export function AiReasoningBadge({
         style={styles.header}
         accessibilityRole="button"
         accessibilityLabel={strings.reasoning}
+        accessibilityState={{ expanded }}
       >
         <Ionicons name="sparkles-outline" size={14} color={theme.colors.text[500]} />
         <AiText variant="caption" style={{ color: theme.colors.text[500], flex: 1 }}>

@@ -23,6 +23,7 @@ export const AiSuggestionGrid: React.FC<AiSuggestionGridProps> = ({ suggestions,
         <Pressable
           key={suggestion.id}
           onPress={() => onSelect(suggestion)}
+          accessibilityRole="button"
           style={[
             styles.card,
             {

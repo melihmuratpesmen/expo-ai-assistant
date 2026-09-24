@@ -116,12 +116,18 @@ export function AiChatModalBody({
               <Pressable
                 onPress={onOpenFullPage}
                 hitSlop={8}
+                accessibilityRole="button"
                 accessibilityLabel={strings.accessibilityExpand}
               >
                 <Ionicons name="expand-outline" size={22} color={theme.colors.primary.DEFAULT} />
               </Pressable>
             ) : null}
-            <Pressable onPress={onClose} hitSlop={8} accessibilityLabel={strings.accessibilityClose}>
+            <Pressable
+              onPress={onClose}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={strings.accessibilityClose}
+            >
               <Ionicons name="close" size={22} color={theme.colors.text[500]} />
             </Pressable>
           </View>

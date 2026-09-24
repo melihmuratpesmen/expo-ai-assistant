@@ -124,12 +124,21 @@ export const AiInputBubble: React.FC<AiInputBubbleProps> = ({
       >
         <Ionicons name="expand-outline" size={18} color={theme.colors.primary.DEFAULT} />
       </Pressable>
-      <Pressable onPress={onClose} hitSlop={8} style={styles.iconButton}>
+      <Pressable
+        onPress={onClose}
+        hitSlop={8}
+        style={styles.iconButton}
+        accessibilityRole="button"
+        accessibilityLabel={strings.accessibilityClose}
+      >
         <Ionicons name="close" size={18} color={theme.colors.text[500]} />
       </Pressable>
       <Pressable
         onPress={handleSend}
         disabled={!value.trim()}
+        accessibilityRole="button"
+        accessibilityLabel={strings.send}
+        accessibilityState={{ disabled: !value.trim() }}
         style={[
           styles.sendButton,
           { backgroundColor: value.trim() ? theme.colors.primary.DEFAULT : theme.colors.text[300] },

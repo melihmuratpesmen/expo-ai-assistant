@@ -47,8 +47,9 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
   const hasBlocks = !!message.blocks?.length;
   const hasText = !!message.content?.trim();
   const hasReasoning = !!message.reasoning?.trim();
-  const showTypingDots =
-    !isUser && message.status === 'streaming' && !hasText && !hasBlocks && !hasFunctionCalls;
+  const isEmpty = !hasText && !hasBlocks && !hasFunctionCalls;
+  const showTypingDots = !isUser && message.status === 'streaming' && isEmpty;
+  const showErrorFallback = !isUser && message.status === 'error' && isEmpty;
   const isWide = hasFunctionCalls || hasBlocks;
   const trailingText =
     message.status === 'streaming' ? computeTrailingText(message.content, hasBlocks) : undefined;
@@ -90,7 +91,7 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
           />
         ) : null}
 
-        {(hasText || hasBlocks || showTypingDots) && (
+        {(hasText || hasBlocks || showTypingDots || showErrorFallback) && (
           <View
             style={[
               styles.bubble,
@@ -106,6 +107,10 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
           >
             {showTypingDots ? (
               <AiTypingIndicator />
+            ) : showErrorFallback ? (
+              <AiText variant="body" style={[styles.text, { color: theme.colors.text.DEFAULT }]}>
+                {strings.errorStream}
+              </AiText>
             ) : hasBlocks ? (
               slots.renderContentBlocks ? (
                 <>{slots.renderContentBlocks(message.blocks!, trailingText)}</>

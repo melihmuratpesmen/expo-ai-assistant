@@ -152,11 +152,21 @@ export function AiQuickAskProvider({
       <AiText weight="semibold">{title}</AiText>
       <View style={styles.headerActions}>
         {onOpenFullPage ? (
-          <Pressable onPress={continueToFullChat} hitSlop={8}>
+          <Pressable
+            onPress={continueToFullChat}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={strings.accessibilityExpand}
+          >
             <Ionicons name="expand-outline" size={22} color={theme.colors.primary.DEFAULT} />
           </Pressable>
         ) : null}
-        <Pressable onPress={close} hitSlop={8}>
+        <Pressable
+          onPress={close}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={strings.accessibilityClose}
+        >
           <Ionicons name="close" size={22} color={theme.colors.text[500]} />
         </Pressable>
       </View>

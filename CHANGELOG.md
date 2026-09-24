@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.1.14
+
+**Fixes**
+
+- Failed replies are no longer sent back to the model as assistant turns; the error text is a UI fallback instead of message content
+- `callbacks.onError` fires once per failure (the OpenAI-compatible transport no longer reports and throws the same error)
+- Stopping a reply and sending again right away can no longer be overwritten by the old stream's late deltas, tool events or `finally` cleanup
+- Starting a new conversation ignores the previous stream's late result (no stale `conversationId`)
+- `sendMessage` right after `startNewConversation` uses the fresh (empty) history
+- HTTP errors show the provider message (e.g. "Incorrect API key provided.") instead of `Request failed (401)`
+- Cancelling now rejects with `AbortError` in the OpenAI-compatible transport; a trailing SSE line without a newline is no longer dropped; an already-aborted signal does not start a request
+- Modal surface wraps its content in `GestureHandlerRootView` so gestures (table scroll) work on Android
+- `AiMarkdownText` applies its `style` prop when `react-native-markdown-display` is installed
+- Floating panel width follows window size changes (rotation, split screen)
+- History loading spinner no longer sticks when `conversationId` changes mid-load
+
+**i18n / a11y**
+
+- New strings: `accessibilityBack`, `newConversation`, `yes`, `no`, `tableColumn`, `itemCount`, `recordCount`, `previousPage`, `nextPage` (replaces hardcoded "Kapat", "Kolon N", "Yes/No", "N items", "N records")
+- Accessibility labels / roles for header, close, expand, send, delete and pagination buttons
+
+**Tooling**
+
+- Jest + Testing Library test suite (`npm test`) with regression tests for the fixes above
+
 ## 0.1.13
 
 - Sheet gestures restored: input is a gorhom footer (no full-screen overlay stealing pans); list and sheet can scroll again

@@ -1,5 +1,5 @@
 import type { AiChatMessage } from '../types/aiChat';
-import { joinUrl, resolveBearerHeaders, subscribeSseText, SseDataParser, AiHttpError } from './http';
+import { joinUrl, resolveBearerHeaders, subscribeSseText, SseDataParser } from './http';
 import type { AiTransport, AiTransportStreamParams, AiTransportStreamResult } from './types';
 
 export interface OpenAICompatibleTransportOptions {
@@ -39,6 +39,8 @@ function defaultMapMessages(
   }
   for (const message of messages) {
     if (message.role !== 'user' && message.role !== 'assistant') continue;
+    // Empty turns (failed / stopped before output) carry no context for the model.
+    if (!message.content.trim()) continue;
     mapped.push({
       role: message.role,
       content: message.content,
@@ -85,6 +87,39 @@ export function createOpenAICompatibleTransport(
       let messageId: string | undefined;
       let streamError: string | undefined;
 
+      const handlePayload = (data: string) => {
+        if (!data || data === '[DONE]') return;
+
+        let json: Record<string, unknown>;
+        try {
+          json = JSON.parse(data) as Record<string, unknown>;
+        } catch {
+          return;
+        }
+
+        if (typeof json.id === 'string' && !messageId) {
+          messageId = json.id;
+          conversationId = conversationId ?? json.id;
+        }
+
+        if (typeof json.error === 'object' && json.error !== null) {
+          const errObj = json.error as { message?: string };
+          streamError = streamError ?? errObj.message ?? 'Provider error';
+          return;
+        }
+
+        const choices = Array.isArray(json.choices) ? json.choices : [];
+        const first = choices[0] as
+          | { delta?: { content?: string | null }; message?: { content?: string } }
+          | undefined;
+        const delta = first?.delta?.content ?? first?.message?.content;
+        if (typeof delta === 'string' && delta.length > 0) {
+          snapshot += delta;
+          params.handlers.onTextDelta?.(delta, snapshot);
+        }
+      };
+
+      // Fatal errors (HTTP, network, abort) are thrown; useAiChat reports them.
       await subscribeSseText({
         url: joinUrl(baseUrl, chatPath),
         method: 'POST',
@@ -93,52 +128,10 @@ export function createOpenAICompatibleTransport(
         signal: params.signal,
         onUnauthorized: options.onUnauthorized,
         onChunk: chunk => {
-          for (const data of parser.feed(chunk)) {
-            if (!data || data === '[DONE]') continue;
-
-            let json: Record<string, unknown>;
-            try {
-              json = JSON.parse(data) as Record<string, unknown>;
-            } catch {
-              continue;
-            }
-
-            if (typeof json.id === 'string' && !messageId) {
-              messageId = json.id;
-              conversationId = conversationId ?? json.id;
-            }
-
-            if (typeof json.error === 'object' && json.error !== null) {
-              const errObj = json.error as { message?: string };
-              streamError = errObj.message ?? 'Provider error';
-              params.handlers.onError?.(streamError);
-              continue;
-            }
-
-            const choices = Array.isArray(json.choices) ? json.choices : [];
-            const first = choices[0] as
-              | { delta?: { content?: string | null }; message?: { content?: string } }
-              | undefined;
-            const delta = first?.delta?.content ?? first?.message?.content;
-            if (typeof delta === 'string' && delta.length > 0) {
-              snapshot += delta;
-              params.handlers.onTextDelta?.(delta, snapshot);
-            }
-          }
+          for (const data of parser.feed(chunk)) handlePayload(data);
         },
-      }).catch(error => {
-        if ((error as Error)?.name === 'AbortError') {
-          return;
-        }
-        if (error instanceof AiHttpError) {
-          const message = error.message;
-          params.handlers.onError?.(message);
-          throw error;
-        }
-        const message = error instanceof Error ? error.message : 'Stream failed';
-        params.handlers.onError?.(message);
-        throw error;
       });
+      for (const data of parser.flush()) handlePayload(data);
 
       if (streamError) {
         throw new Error(streamError);

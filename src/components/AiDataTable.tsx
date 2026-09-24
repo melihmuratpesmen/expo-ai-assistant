@@ -63,7 +63,7 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
       <View style={styles.metaRow}>
         <Ionicons name="grid-outline" size={12} color={muted} />
         <AiText variant="caption" style={{ color: muted, marginLeft: 4 }}>
-          {rows.length} records
+          {strings.recordCount(rows.length)}
         </AiText>
       </View>
 
@@ -110,7 +110,7 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
                       style={[styles.cellText, { color: theme.colors.text.DEFAULT }]}
                       numberOfLines={2}
                     >
-                      {formatCellValue(row[col.key], col.key)}
+                      {formatCellValue(row[col.key], col.key, strings)}
                     </AiText>
                   </View>
                 ))}
@@ -126,6 +126,9 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
             onPress={() => setPage(p => Math.max(1, p - 1))}
             disabled={safePage <= 1}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={strings.previousPage}
+            accessibilityState={{ disabled: safePage <= 1 }}
             style={[styles.pageBtn, safePage <= 1 && styles.pageBtnDisabled]}
           >
             <Ionicons
@@ -141,6 +144,9 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
             onPress={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={safePage >= totalPages}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={strings.nextPage}
+            accessibilityState={{ disabled: safePage >= totalPages }}
             style={[styles.pageBtn, safePage >= totalPages && styles.pageBtnDisabled]}
           >
             <Ionicons

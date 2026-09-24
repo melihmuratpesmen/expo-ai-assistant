@@ -1,4 +1,7 @@
 /** Generic helpers for rendering structured tool / table payloads. */
+import { defaultStrings, type AiStrings } from '../i18n/strings';
+
+export type CellValueLabels = Pick<AiStrings, 'yes' | 'no' | 'itemCount'>;
 
 export const AI_DATA_TABLE_PAGE_SIZE = 10;
 export const AI_DATA_TABLE_MAX_COLUMNS = 6;
@@ -35,16 +38,20 @@ export function toDisplayString(value: unknown, fallback = '-'): string {
   return fallback;
 }
 
-export function formatCellValue(value: unknown, _key: string): string {
+export function formatCellValue(
+  value: unknown,
+  _key: string,
+  labels: CellValueLabels = defaultStrings
+): string {
   if (value === null || value === undefined) return '-';
   if (typeof value === 'number') return value.toLocaleString();
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  if (typeof value === 'boolean') return value ? labels.yes : labels.no;
   if (Array.isArray(value)) {
     if (value.length === 0) return '-';
     if (value.every(item => typeof item === 'string' || typeof item === 'number')) {
       return value.join(', ');
     }
-    return `${value.length} items`;
+    return labels.itemCount(value.length);
   }
   return toDisplayString(value);
 }

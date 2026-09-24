@@ -2,12 +2,31 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAiTransport } from '../provider/AiAssistantProvider';
 import { useAiCallbacks } from '../provider/slots';
 import { useAiStrings } from '../i18n/AiStringsContext';
+import { useLatestRef } from '../lib/useLatestRef';
 import type { AiChatMessage, AiFunctionCall } from '../types/aiChat';
 
 let messageCounter = 0;
 function nextLocalId(prefix: string): string {
   messageCounter += 1;
   return `${prefix}-${Date.now()}-${messageCounter}`;
+}
+
+function isAbortError(error: unknown): boolean {
+  return (error as Error | undefined)?.name === 'AbortError';
+}
+
+/**
+ * Prior turns the model should see: assistant turns that produced nothing
+ * (failed or stopped before any output) are dropped.
+ */
+export function toTransportHistory(messages: AiChatMessage[]): AiChatMessage[] {
+  return messages.filter(message => {
+    if (message.role !== 'assistant') return true;
+    if (message.status === 'streaming') return false;
+    return (
+      !!message.content.trim() || !!message.blocks?.length || !!message.functionCalls?.length
+    );
+  });
 }
 
 export interface UseAiChatOptions {
@@ -29,36 +48,79 @@ export interface UseAiChatResult {
 
 export function useAiChat(options: UseAiChatOptions = {}): UseAiChatResult {
   const transport = useAiTransport();
-  const callbacks = useAiCallbacks();
-  const strings = useAiStrings();
+  const callbacksRef = useLatestRef(useAiCallbacks());
+  const stringsRef = useLatestRef(useAiStrings());
 
-  const [conversationId, setConversationId] = useState<string | null>(
+  const [conversationId, setConversationIdState] = useState<string | null>(
     options.conversationId ?? null
   );
-  const [messages, setMessages] = useState<AiChatMessage[]>([]);
-  const [isStreaming, setIsStreaming] = useState(false);
+  const [messages, setMessagesState] = useState<AiChatMessage[]>([]);
+  const [isStreaming, setIsStreamingState] = useState(false);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const abortRef = useRef<AbortController | null>(null);
-  const streamingAssistantIdRef = useRef<string | null>(null);
-  const loadedSessionRef = useRef<string | null>(null);
-  const activeFunctionCallsRef = useRef<AiFunctionCall[]>([]);
+  // Refs mirror state synchronously so actions called in the same tick
+  // (e.g. startNewConversation + sendMessage) see the latest values.
   const messagesRef = useRef<AiChatMessage[]>([]);
   const conversationIdRef = useRef<string | null>(conversationId);
   const isStreamingRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
+  const streamingAssistantIdRef = useRef<string | null>(null);
+  const loadedSessionRef = useRef<string | null>(null);
+  /** Bumped whenever the conversation is replaced; late results from older streams are ignored. */
+  const epochRef = useRef(0);
 
-  useEffect(() => {
-    messagesRef.current = messages;
-  }, [messages]);
+  const updateMessages = useCallback(
+    (updater: (prev: AiChatMessage[]) => AiChatMessage[]) => {
+      const next = updater(messagesRef.current);
+      if (next === messagesRef.current) return;
+      messagesRef.current = next;
+      setMessagesState(next);
+    },
+    []
+  );
 
-  useEffect(() => {
-    conversationIdRef.current = conversationId;
-  }, [conversationId]);
+  const patchMessage = useCallback(
+    (id: string, patch: Partial<AiChatMessage>) => {
+      updateMessages(prev => {
+        const index = prev.findIndex(m => m.id === id);
+        if (index < 0) return prev;
+        const next = [...prev];
+        next[index] = { ...next[index], ...patch };
+        return next;
+      });
+    },
+    [updateMessages]
+  );
 
-  useEffect(() => {
-    isStreamingRef.current = isStreaming;
-  }, [isStreaming]);
+  const setConversationId = useCallback((id: string | null) => {
+    conversationIdRef.current = id;
+    setConversationIdState(id);
+  }, []);
+
+  const setStreaming = useCallback((value: boolean) => {
+    isStreamingRef.current = value;
+    setIsStreamingState(value);
+  }, []);
+
+  const cancelStreaming = useCallback(() => {
+    const controller = abortRef.current;
+    const assistantId = streamingAssistantIdRef.current;
+    abortRef.current = null;
+    streamingAssistantIdRef.current = null;
+    controller?.abort();
+    setStreaming(false);
+
+    if (assistantId) {
+      updateMessages(prev => {
+        const index = prev.findIndex(m => m.id === assistantId);
+        if (index < 0 || prev[index].status !== 'streaming') return prev;
+        const next = [...prev];
+        next[index] = { ...next[index], status: 'stopped' };
+        return next;
+      });
+    }
+  }, [setStreaming, updateMessages]);
 
   useEffect(() => {
     const sessionId = options.conversationId;
@@ -66,20 +128,24 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatResult {
     if (loadedSessionRef.current === sessionId) return;
 
     let cancelled = false;
+    const controller = new AbortController();
     setIsLoadingHistory(true);
     transport
-      .getHistory(sessionId)
+      .getHistory(sessionId, controller.signal)
       .then(history => {
         if (cancelled) return;
+        epochRef.current += 1;
+        cancelStreaming();
         loadedSessionRef.current = sessionId;
-        setMessages(history.messages);
+        updateMessages(() => history.messages);
         setConversationId(history.sessionId);
+        setError(null);
       })
       .catch(err => {
-        if (cancelled) return;
-        const message = err instanceof Error ? err.message : strings.errorHistory;
+        if (cancelled || isAbortError(err)) return;
+        const message = err instanceof Error ? err.message : stringsRef.current.errorHistory;
         setError(message);
-        callbacks.onError?.(message);
+        callbacksRef.current.onError?.(message);
       })
       .finally(() => {
         if (!cancelled) setIsLoadingHistory(false);
@@ -87,37 +153,18 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatResult {
 
     return () => {
       cancelled = true;
+      controller.abort();
+      setIsLoadingHistory(false);
     };
-  }, [transport, options.conversationId, strings.errorHistory, callbacks]);
-
-  const patchMessage = useCallback((id: string, patch: Partial<AiChatMessage>) => {
-    setMessages(prev => {
-      const index = prev.findIndex(m => m.id === id);
-      if (index < 0) return prev;
-      const next = [...prev];
-      next[index] = { ...next[index], ...patch };
-      return next;
-    });
-  }, []);
-
-  const updateFunctionCalls = useCallback(
-    (id: string, updater: (current: AiFunctionCall[]) => AiFunctionCall[]) => {
-      setMessages(prev => {
-        const index = prev.findIndex(m => m.id === id);
-        if (index < 0) return prev;
-        const current = prev[index];
-        const nextCalls = updater(current.functionCalls ?? []);
-        activeFunctionCallsRef.current = nextCalls;
-        const next = [...prev];
-        next[index] = {
-          ...current,
-          functionCalls: nextCalls.length > 0 ? nextCalls : undefined,
-        };
-        return next;
-      });
-    },
-    []
-  );
+  }, [
+    transport,
+    options.conversationId,
+    cancelStreaming,
+    updateMessages,
+    setConversationId,
+    callbacksRef,
+    stringsRef,
+  ]);
 
   const runAssistantStream = useCallback(
     async (params: {
@@ -127,164 +174,136 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatResult {
       appendUserMessage?: AiChatMessage;
     }) => {
       const { priorMessages, userMessageText, assistantId, appendUserMessage } = params;
+      const epoch = epochRef.current;
       const currentConversationId = conversationIdRef.current;
+      const controller = new AbortController();
+      const isStale = () => controller.signal.aborted || epochRef.current !== epoch;
 
-      activeFunctionCallsRef.current = [];
+      abortRef.current = controller;
+      streamingAssistantIdRef.current = assistantId;
+      setStreaming(true);
       setError(null);
 
-      if (appendUserMessage) {
-        setMessages(prev => [
-          ...prev,
-          appendUserMessage,
-          {
-            id: assistantId,
-            role: 'assistant',
-            content: '',
-            createdAt: Date.now(),
-            status: 'streaming',
-          },
-        ]);
-      } else {
-        setMessages(prev => {
-          const index = prev.findIndex(m => m.id === assistantId);
-          if (index >= 0) {
-            const next = [...prev];
-            next[index] = {
-              ...next[index],
-              content: '',
-              reasoning: undefined,
-              blocks: undefined,
-              functionCalls: undefined,
-              status: 'streaming',
-            };
-            return next;
-          }
-          return [
-            ...prev,
-            {
-              id: assistantId,
-              role: 'assistant',
-              content: '',
-              createdAt: Date.now(),
-              status: 'streaming',
-            },
-          ];
-        });
-      }
+      const placeholder: AiChatMessage = {
+        id: assistantId,
+        role: 'assistant',
+        content: '',
+        createdAt: Date.now(),
+        status: 'streaming',
+      };
+      updateMessages(prev => {
+        if (appendUserMessage) return [...prev, appendUserMessage, placeholder];
+        const index = prev.findIndex(m => m.id === assistantId);
+        if (index < 0) return [...prev, placeholder];
+        const next = [...prev];
+        next[index] = placeholder;
+        return next;
+      });
 
-      setIsStreaming(true);
-      streamingAssistantIdRef.current = assistantId;
-      callbacks.onMessageSent?.(userMessageText, currentConversationId);
-      callbacks.onStreamStart?.(currentConversationId);
+      callbacksRef.current.onMessageSent?.(userMessageText, currentConversationId);
+      callbacksRef.current.onStreamStart?.(currentConversationId);
 
-      const controller = new AbortController();
-      abortRef.current = controller;
+      let functionCalls: AiFunctionCall[] = [];
+      let reportedError = false;
+      const reportError = (message: string) => {
+        setError(message);
+        // Transports may report through the handler and then throw; notify once.
+        if (reportedError) return;
+        reportedError = true;
+        callbacksRef.current.onError?.(message);
+      };
 
       try {
         const result = await transport.streamChat({
-          messages: priorMessages,
+          messages: toTransportHistory(priorMessages),
           userMessage: userMessageText,
           conversationId: currentConversationId,
           signal: controller.signal,
           handlers: {
             onTextDelta: (_delta, snapshot) => {
+              if (isStale()) return;
               patchMessage(assistantId, { content: snapshot });
             },
             onReasoningDelta: (_delta, snapshot) => {
+              if (isStale()) return;
               patchMessage(assistantId, { reasoning: snapshot });
             },
             onToolStart: tool => {
-              if (!tool.id || !tool.name) return;
-              updateFunctionCalls(assistantId, current => {
-                if (current.some(fc => fc.id === tool.id)) return current;
-                return [
-                  ...current,
-                  {
-                    id: tool.id,
-                    name: tool.name,
-                    label: tool.label,
-                    status: 'executing',
-                    reasoning: tool.reasoning,
-                  },
-                ];
-              });
+              if (isStale() || !tool.id || !tool.name) return;
+              if (functionCalls.some(fc => fc.id === tool.id)) return;
+              functionCalls = [
+                ...functionCalls,
+                {
+                  id: tool.id,
+                  name: tool.name,
+                  label: tool.label,
+                  status: 'executing',
+                  reasoning: tool.reasoning,
+                },
+              ];
+              patchMessage(assistantId, { functionCalls });
             },
             onToolComplete: tool => {
-              if (!tool.id) return;
-              updateFunctionCalls(assistantId, current => {
-                const next = current.map(fc =>
-                  fc.id === tool.id
-                    ? {
-                        ...fc,
-                        status: 'completed' as const,
-                        frontendData: tool.frontendData,
-                      }
-                    : fc
-                );
-                const completed = next.find(fc => fc.id === tool.id);
-                if (completed) callbacks.onToolComplete?.(completed);
-                return next;
-              });
+              if (isStale() || !tool.id) return;
+              const existing = functionCalls.find(fc => fc.id === tool.id);
+              const completed: AiFunctionCall = existing
+                ? { ...existing, status: 'completed', frontendData: tool.frontendData }
+                : {
+                    id: tool.id,
+                    name: tool.name,
+                    status: 'completed',
+                    frontendData: tool.frontendData,
+                  };
+              functionCalls = existing
+                ? functionCalls.map(fc => (fc.id === tool.id ? completed : fc))
+                : [...functionCalls, completed];
+              patchMessage(assistantId, { functionCalls });
+              callbacksRef.current.onToolComplete?.(completed);
             },
-            onError: errMessage => {
-              setError(errMessage);
-              callbacks.onError?.(errMessage);
+            onError: message => {
+              if (isStale()) return;
+              reportError(message);
             },
           },
         });
 
+        // A newer conversation replaced this one; drop the late result.
+        if (epochRef.current !== epoch) return;
+
         if (result.conversationId && result.conversationId !== currentConversationId) {
-          setConversationId(result.conversationId);
           loadedSessionRef.current = result.conversationId;
+          setConversationId(result.conversationId);
           if (!currentConversationId) {
-            callbacks.onConversationCreated?.(result.conversationId);
+            callbacksRef.current.onConversationCreated?.(result.conversationId);
           }
         }
 
-        // If user aborted, cancelStreaming already finalized status.
+        // If the user stopped the stream, cancelStreaming already finalized the message.
         if (controller.signal.aborted) return;
 
         patchMessage(assistantId, {
           status: 'sent',
           id: result.messageId ?? assistantId,
           content: result.text,
-          functionCalls:
-            activeFunctionCallsRef.current.length > 0
-              ? activeFunctionCallsRef.current
-              : undefined,
+          functionCalls: functionCalls.length > 0 ? functionCalls : undefined,
         });
       } catch (err) {
-        if ((err as Error).name === 'AbortError' || controller.signal.aborted) {
-          return;
-        }
-        const message = err instanceof Error ? err.message : strings.errorGeneric;
-        setError(message);
-        callbacks.onError?.(message);
-        setMessages(prev => {
-          const index = prev.findIndex(m => m.id === assistantId);
-          if (index < 0) return prev;
-          const current = prev[index];
-          const hasPartialContent = !!current.content?.trim();
-          const hasFunctionCalls = !!current.functionCalls?.length;
-          const next = [...prev];
-          next[index] = {
-            ...current,
-            status: 'error',
-            content:
-              hasPartialContent || hasFunctionCalls ? current.content : strings.errorStream,
-          };
-          return next;
-        });
+        if (isAbortError(err) || isStale()) return;
+        const message =
+          err instanceof Error && err.message ? err.message : stringsRef.current.errorGeneric;
+        reportError(message);
+        // Keep whatever the model produced; the bubble renders a fallback for empty errors.
+        patchMessage(assistantId, { status: 'error' });
       } finally {
-        if (streamingAssistantIdRef.current === assistantId) {
+        if (abortRef.current === controller) {
+          abortRef.current = null;
           streamingAssistantIdRef.current = null;
+          setStreaming(false);
         }
-        setIsStreaming(false);
-        abortRef.current = null;
-        callbacks.onStreamEnd?.(conversationIdRef.current);
+        callbacksRef.current.onStreamEnd?.(conversationIdRef.current);
       }
     },
-    [callbacks, patchMessage, strings.errorGeneric, strings.errorStream, transport, updateFunctionCalls]
+    [callbacksRef, patchMessage, setConversationId, setStreaming, stringsRef, transport, updateMessages]
   );
 
   const sendMessage = useCallback(
@@ -292,7 +311,6 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatResult {
       const trimmed = text.trim();
       if (!trimmed || isStreamingRef.current) return;
 
-      const priorMessages = messagesRef.current;
       const userMessage: AiChatMessage = {
         id: nextLocalId('user'),
         role: 'user',
@@ -300,12 +318,11 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatResult {
         createdAt: Date.now(),
         status: 'sent',
       };
-      const assistantId = nextLocalId('assistant');
 
       await runAssistantStream({
-        priorMessages,
+        priorMessages: messagesRef.current,
         userMessageText: trimmed,
-        assistantId,
+        assistantId: nextLocalId('assistant'),
         appendUserMessage: userMessage,
       });
     },
@@ -316,73 +333,39 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatResult {
     if (isStreamingRef.current) return;
 
     const current = messagesRef.current;
-    let lastAssistantIndex = -1;
-    for (let i = current.length - 1; i >= 0; i -= 1) {
-      if (current[i].role === 'assistant') {
-        lastAssistantIndex = i;
-        break;
-      }
-    }
-    if (lastAssistantIndex < 0) return;
-
     let lastUserIndex = -1;
-    for (let i = lastAssistantIndex - 1; i >= 0; i -= 1) {
+    for (let i = current.length - 1; i >= 0; i -= 1) {
       if (current[i].role === 'user') {
         lastUserIndex = i;
         break;
       }
     }
-    if (lastUserIndex < 0) return;
+    if (lastUserIndex < 0 || !current.slice(lastUserIndex).some(m => m.role === 'assistant')) {
+      return;
+    }
 
-    const userMessageText = current[lastUserIndex].content;
-    const priorMessages = current.slice(0, lastUserIndex);
-    const assistantId = nextLocalId('assistant');
-
-    setMessages(prev => {
-      // Drop trailing assistant (and anything after last user) then insert fresh assistant placeholder via runAssistantStream
-      return prev.slice(0, lastUserIndex + 1);
-    });
+    // Drop the reply (and anything after the last user turn); the stream adds a fresh placeholder.
+    updateMessages(prev => prev.slice(0, lastUserIndex + 1));
 
     await runAssistantStream({
-      priorMessages,
-      userMessageText,
-      assistantId,
+      priorMessages: current.slice(0, lastUserIndex),
+      userMessageText: current[lastUserIndex].content,
+      assistantId: nextLocalId('assistant'),
     });
-  }, [runAssistantStream]);
-
-  const cancelStreaming = useCallback(() => {
-    const assistantId = streamingAssistantIdRef.current;
-    abortRef.current?.abort();
-    abortRef.current = null;
-    setIsStreaming(false);
-    streamingAssistantIdRef.current = null;
-
-    if (assistantId) {
-      setMessages(prev => {
-        const index = prev.findIndex(m => m.id === assistantId);
-        if (index < 0) return prev;
-        const current = prev[index];
-        const next = [...prev];
-        next[index] = {
-          ...current,
-          status: current.content?.trim() || current.functionCalls?.length ? 'stopped' : 'stopped',
-        };
-        return next;
-      });
-    }
-  }, []);
+  }, [runAssistantStream, updateMessages]);
 
   const startNewConversation = useCallback(() => {
+    epochRef.current += 1;
     cancelStreaming();
-    setMessages([]);
+    updateMessages(() => []);
     setConversationId(null);
     setError(null);
     loadedSessionRef.current = null;
-    activeFunctionCallsRef.current = [];
-  }, [cancelStreaming]);
+  }, [cancelStreaming, setConversationId, updateMessages]);
 
   useEffect(() => {
     return () => {
+      epochRef.current += 1;
       abortRef.current?.abort();
     };
   }, []);

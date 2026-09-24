@@ -70,7 +70,13 @@ export function AiConversationHistoryScreen({
       >
         <View style={styles.headerLeft}>
           {onBackPress ? (
-            <Pressable onPress={onBackPress} hitSlop={8} style={styles.headerIcon}>
+            <Pressable
+              onPress={onBackPress}
+              hitSlop={8}
+              style={styles.headerIcon}
+              accessibilityRole="button"
+              accessibilityLabel={strings.accessibilityBack}
+            >
               <Ionicons name="chevron-back" size={24} color={theme.colors.text.DEFAULT} />
             </Pressable>
           ) : null}
@@ -112,6 +118,7 @@ export function AiConversationHistoryScreen({
                 onPress={() => onOpenConversation(item.id)}
                 disabled={deletingId === item.id}
                 style={styles.cardPressable}
+                accessibilityRole="button"
               >
                 <View style={[styles.iconWrap, { backgroundColor: theme.colors.primary.subtle }]}>
                   <Ionicons
@@ -143,6 +150,8 @@ export function AiConversationHistoryScreen({
                 disabled={deletingId === item.id}
                 hitSlop={8}
                 style={styles.deleteButton}
+                accessibilityRole="button"
+                accessibilityLabel={`${strings.delete}: ${item.title}`}
               >
                 {deletingId === item.id ? (
                   <ActivityIndicator size="small" color={theme.colors.error.DEFAULT} />

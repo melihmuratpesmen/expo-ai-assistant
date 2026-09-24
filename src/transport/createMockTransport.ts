@@ -28,11 +28,14 @@ function sleep(ms: number, signal?: AbortSignal) {
       reject(Object.assign(new Error('Aborted'), { name: 'AbortError' }));
       return;
     }
-    const timer = setTimeout(resolve, ms);
     const onAbort = () => {
       clearTimeout(timer);
       reject(Object.assign(new Error('Aborted'), { name: 'AbortError' }));
     };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
     signal?.addEventListener('abort', onAbort, { once: true });
   });
 }

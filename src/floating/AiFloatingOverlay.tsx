@@ -11,6 +11,7 @@ import {
   type AiOverlayLayout,
 } from './aiButtonPosition';
 import { useAiKeyboardLift } from './useAiKeyboardLift';
+import { useAiStrings } from '../i18n/AiStringsContext';
 
 export interface AiFloatingOverlayProps {
   /** When false, overlay is hidden (host RBAC / prefs). Default true. */
@@ -35,6 +36,7 @@ export function AiFloatingOverlay({
   onOpenFullPage,
 }: AiFloatingOverlayProps) {
   const insets = useSafeAreaInsets();
+  const strings = useAiStrings();
   const [overlayLayout, setOverlayLayout] = useState<AiOverlayLayout | null>(null);
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
@@ -96,7 +98,7 @@ export function AiFloatingOverlay({
             setPanelVisible(false);
           }}
           accessibilityRole="button"
-          accessibilityLabel="Kapat"
+          accessibilityLabel={strings.accessibilityClose}
         />
       ) : null}
 

@@ -17,6 +17,8 @@ export interface AiStrings {
   accessibilityAssistant: string;
   accessibilityExpand: string;
   accessibilityClose: string;
+  accessibilityBack: string;
+  newConversation: string;
   errorGeneric: string;
   errorHistory: string;
   errorSessions: string;
@@ -33,6 +35,14 @@ export interface AiStrings {
   copied: string;
   regenerate: string;
   reasoning: string;
+  yes: string;
+  no: string;
+  /** Header used when a table block has no column names. */
+  tableColumn: (index: number) => string;
+  itemCount: (count: number) => string;
+  recordCount: (count: number) => string;
+  previousPage: string;
+  nextPage: string;
 }
 
 export const defaultStrings: AiStrings = {
@@ -54,6 +64,8 @@ export const defaultStrings: AiStrings = {
   accessibilityAssistant: 'AI Assistant',
   accessibilityExpand: 'Expand',
   accessibilityClose: 'Close',
+  accessibilityBack: 'Back',
+  newConversation: 'New chat',
   errorGeneric: 'Something went wrong.',
   errorHistory: 'Could not load history.',
   errorSessions: 'Could not load conversations.',
@@ -70,6 +82,13 @@ export const defaultStrings: AiStrings = {
   copied: 'Copied',
   regenerate: 'Regenerate',
   reasoning: 'Thinking',
+  yes: 'Yes',
+  no: 'No',
+  tableColumn: index => `Column ${index}`,
+  itemCount: count => (count === 1 ? '1 item' : `${count} items`),
+  recordCount: count => (count === 1 ? '1 record' : `${count} records`),
+  previousPage: 'Previous page',
+  nextPage: 'Next page',
 };
 
 export type AiStringsOverride = {

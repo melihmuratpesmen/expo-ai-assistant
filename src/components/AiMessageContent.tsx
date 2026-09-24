@@ -3,6 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useAiTheme } from '../theme/AiThemeContext';
+import { useAiStrings } from '../i18n/AiStringsContext';
 import { fontSize, radius, spacing } from '../theme/tokens';
 import type {
   AlertBlock,
@@ -137,6 +138,7 @@ function CodeBlockView({ block }: { block: CodeBlock }) {
 
 function TableBlockView({ block }: { block: TableBlock }) {
   const theme = useAiTheme();
+  const strings = useAiStrings();
   const { isDark } = theme.meta;
   const borderColor = theme.colors.border.DEFAULT;
   const headerBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
@@ -144,7 +146,7 @@ function TableBlockView({ block }: { block: TableBlock }) {
   const headers =
     block.headers.length > 0
       ? block.headers
-      : Array.from({ length: colCount }, (_, i) => `Kolon ${i + 1}`);
+      : Array.from({ length: colCount }, (_, i) => strings.tableColumn(i + 1));
 
   return (
     <View style={styles.tableWrap}>
