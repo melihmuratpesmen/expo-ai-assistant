@@ -24,8 +24,12 @@ const BUBBLE_WIDTH = 280;
 const BUBBLE_HEIGHT = 48;
 const BUBBLE_OFFSET_ABOVE_BUTTON = 56;
 
-export const AiInputBubble: React.FC<AiInputBubbleProps> = ({
-  visible,
+export function AiInputBubble(props: AiInputBubbleProps) {
+  // Mounted only while visible, so the draft resets whenever the bubble closes.
+  return props.visible ? <AiInputBubbleContent {...props} /> : null;
+}
+
+function AiInputBubbleContent({
   anchor,
   onSend,
   onExpand,
@@ -33,10 +37,9 @@ export const AiInputBubble: React.FC<AiInputBubbleProps> = ({
   placeholder: placeholderProp,
   layout: overlayLayout = null,
   liftWithKeyboard = true,
-}) => {
+}: AiInputBubbleProps) {
   const theme = useAiTheme();
   const strings = useAiStrings();
-  const { isDark } = theme.meta;
   const placeholder = placeholderProp ?? strings.quickAskPlaceholder;
   const inputRef = useRef<TextInput>(null);
   const [value, setValue] = React.useState('');
@@ -49,18 +52,14 @@ export const AiInputBubble: React.FC<AiInputBubbleProps> = ({
 
   const keyboardLiftStyle = useAiKeyboardLift(
     anchorY,
-    visible && liftWithKeyboard,
+    liftWithKeyboard,
     overlayLayout?.height ?? null
   );
 
   useEffect(() => {
-    if (visible) {
-      const timer = setTimeout(() => inputRef.current?.focus(), 80);
-      return () => clearTimeout(timer);
-    }
-    setValue('');
-    return undefined;
-  }, [visible]);
+    const timer = setTimeout(() => inputRef.current?.focus(), 80);
+    return () => clearTimeout(timer);
+  }, []);
 
   const layout = useMemo(() => {
     const screenWidth = overlayLayout?.width || Dimensions.get('window').width;
@@ -71,8 +70,6 @@ export const AiInputBubble: React.FC<AiInputBubbleProps> = ({
     const top = Math.max(anchor.y - BUBBLE_OFFSET_ABOVE_BUTTON, spacing[4]);
     return { left, top };
   }, [anchor.x, anchor.y, overlayLayout?.width]);
-
-  if (!visible) return null;
 
   const handleSend = () => {
     const trimmed = value.trim();
@@ -96,7 +93,7 @@ export const AiInputBubble: React.FC<AiInputBubbleProps> = ({
         {
           left: layout.left,
           top: layout.top,
-          backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+          backgroundColor: theme.colors.surface.raised,
           borderColor: theme.colors.border.DEFAULT,
         },
       ]}
@@ -148,7 +145,7 @@ export const AiInputBubble: React.FC<AiInputBubbleProps> = ({
       </Pressable>
     </Animated.View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   bubble: {

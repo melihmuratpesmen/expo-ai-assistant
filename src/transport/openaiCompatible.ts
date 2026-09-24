@@ -8,8 +8,13 @@ export interface OpenAICompatibleTransportOptions {
    * `https://api.openai.com/v1` or any OpenAI-compatible gateway.
    */
   baseUrl?: string;
-  /** API key provider. Prefer a function so the key is not baked into the bundle. */
-  apiKey: () => Promise<string | null> | string | null;
+  /**
+   * API key provider, called per request. Omit it when `baseUrl` points at
+   * your own proxy that adds the key server-side (recommended for production:
+   * anything in the app bundle, including `EXPO_PUBLIC_*` variables, can be
+   * extracted by users).
+   */
+  apiKey?: () => Promise<string | null> | string | null;
   /** Chat model id (required for OpenAI-compatible backends). */
   model: string;
   /** Defaults to `/chat/completions`. */

@@ -1,5 +1,5 @@
 import React from 'react';
-import { act, renderHook } from '@testing-library/react-native';
+import { act, renderHook, waitFor } from '@testing-library/react-native';
 import { AiAssistantProvider } from '../../provider/AiAssistantProvider';
 import type { AiAssistantCallbacks } from '../../provider/slots';
 import type {
@@ -59,7 +59,8 @@ describe('useAiChat', () => {
     await act(async () => {
       streams[0].params.handlers.onTextDelta?.('Hel', 'Hel');
     });
-    expect(result.current.messages[1].content).toBe('Hel');
+    // Deltas are applied once per frame.
+    await waitFor(() => expect(result.current.messages[1].content).toBe('Hel'));
 
     await act(async () => {
       streams[0].finish('Hello');
@@ -137,7 +138,7 @@ describe('useAiChat', () => {
     await act(async () => {
       streams[1].params.handlers.onTextDelta?.('fresh', 'fresh');
     });
-    expect(result.current.messages[3].content).toBe('fresh');
+    await waitFor(() => expect(result.current.messages[3].content).toBe('fresh'));
 
     await act(async () => {
       streams[1].finish('fresh');

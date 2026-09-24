@@ -102,7 +102,7 @@ export function AiConversationHistoryScreen({
               style={[
                 styles.card,
                 {
-                  backgroundColor: theme.meta.isDark ? '#1F2937' : '#FFFFFF',
+                  backgroundColor: theme.colors.surface.raised,
                   borderColor: theme.colors.border.DEFAULT,
                 },
               ]}

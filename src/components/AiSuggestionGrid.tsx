@@ -13,7 +13,6 @@ interface AiSuggestionGridProps {
 
 export const AiSuggestionGrid: React.FC<AiSuggestionGridProps> = ({ suggestions, onSelect }) => {
   const theme = useAiTheme();
-  const { isDark } = theme.meta;
 
   if (suggestions.length === 0) return null;
 
@@ -27,7 +26,7 @@ export const AiSuggestionGrid: React.FC<AiSuggestionGridProps> = ({ suggestions,
           style={[
             styles.card,
             {
-              backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+              backgroundColor: theme.colors.surface.raised,
               borderColor: theme.colors.border.DEFAULT,
             },
           ]}

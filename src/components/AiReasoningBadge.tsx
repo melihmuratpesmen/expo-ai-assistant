@@ -24,7 +24,7 @@ export function AiReasoningBadge({ reasoning, defaultExpanded = false }: AiReaso
       style={[
         styles.wrap,
         {
-          backgroundColor: theme.meta.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+          backgroundColor: theme.colors.surface.subtle,
           borderColor: theme.colors.border.DEFAULT,
         },
       ]}

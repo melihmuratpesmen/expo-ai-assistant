@@ -1,16 +1,21 @@
-import React, { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import React, { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAiChat } from '../hooks/useAiChat';
+import { useAiChatController } from '../hooks/useAiChat';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { spacing, radius } from '../theme/tokens';
 import { AiText } from '../components/AiText';
-import { AiChatModalContext, type AiChatModalContextValue } from './aiChatModalContext';
+import {
+  AiChatModalContext,
+  type AiChatModalControls,
+  type AiChatModalOpenOptions,
+} from './aiChatModalContext';
 import { AiChatModalBody } from './AiChatModalBody';
+import type { AiSuggestion } from '../types/aiContext';
 
 export interface AiChatModalProviderProps {
   children: ReactNode;
@@ -22,6 +27,8 @@ export interface AiChatModalProviderProps {
    * `fullscreen` — edge-to-edge modal.
    */
   presentation?: 'card' | 'fullscreen';
+  /** Empty-state suggestions (defaults to `DEFAULT_SUGGESTIONS`). */
+  suggestions?: AiSuggestion[];
 }
 
 /**
@@ -33,58 +40,39 @@ export function AiChatModalProvider({
   onOpenFullPage,
   title: titleProp,
   presentation = 'card',
+  suggestions,
 }: AiChatModalProviderProps) {
   const theme = useAiTheme();
   const strings = useAiStrings();
   const insets = useSafeAreaInsets();
   const title = titleProp ?? strings.assistantTitle;
-  const chat = useAiChat();
-  const { sendMessage, startNewConversation, cancelStreaming, conversationId } = chat;
+  const controller = useAiChatController();
   const [isActive, setIsActive] = useState(false);
-  const sentInitialRef = useRef(false);
-
-  const handleClose = useCallback(() => {
-    setIsActive(false);
-    cancelStreaming();
-    sentInitialRef.current = false;
-  }, [cancelStreaming]);
 
   const close = useCallback(() => {
-    handleClose();
-  }, [handleClose]);
+    setIsActive(false);
+    controller.cancelStreaming();
+  }, [controller]);
 
   const continueToFullChat = useCallback(() => {
-    const id = conversationId;
-    handleClose();
-    onOpenFullPage?.(id);
-  }, [conversationId, handleClose, onOpenFullPage]);
+    const { conversationId } = controller.getSnapshot();
+    close();
+    onOpenFullPage?.(conversationId);
+  }, [close, controller, onOpenFullPage]);
 
   const open = useCallback(
-    (options?: { initialMessage?: string }) => {
-      startNewConversation();
-      sentInitialRef.current = false;
+    (options?: AiChatModalOpenOptions) => {
+      controller.startNewConversation();
       setIsActive(true);
-
       const initialMessage = options?.initialMessage?.trim();
-      if (initialMessage) {
-        setTimeout(() => {
-          if (sentInitialRef.current) return;
-          sentInitialRef.current = true;
-          void sendMessage(initialMessage);
-        }, 120);
-      }
+      if (initialMessage) void controller.sendMessage(initialMessage);
     },
-    [sendMessage, startNewConversation]
+    [controller]
   );
 
-  const value = useMemo<AiChatModalContextValue>(
-    () => ({
-      isActive,
-      chat,
-      open,
-      close,
-    }),
-    [chat, close, isActive, open]
+  const value = useMemo<AiChatModalControls>(
+    () => ({ isActive, open, close, controller }),
+    [close, controller, isActive, open]
   );
 
   const isFullscreen = presentation === 'fullscreen';
@@ -104,7 +92,7 @@ export function AiChatModalProvider({
           <View
             style={[
               styles.backdrop,
-              !isFullscreen && { backgroundColor: 'rgba(0,0,0,0.45)' },
+              !isFullscreen && { backgroundColor: theme.colors.surface.backdrop },
               isFullscreen && { backgroundColor: theme.colors.bg.DEFAULT },
             ]}
           >
@@ -133,6 +121,7 @@ export function AiChatModalProvider({
             >
               {isFullscreen ? (
                 <AiChatModalBody
+                  suggestions={suggestions}
                   title={title}
                   onClose={close}
                   onOpenFullPage={onOpenFullPage ? continueToFullChat : undefined}
@@ -170,7 +159,7 @@ export function AiChatModalProvider({
                     </View>
                   </View>
                   <View style={styles.cardBody}>
-                    <AiChatModalBody onClose={close} showHeader={false} />
+                    <AiChatModalBody suggestions={suggestions} onClose={close} showHeader={false} />
                   </View>
                 </View>
               )}

@@ -12,6 +12,7 @@ import {
 } from './aiButtonPosition';
 import { useAiKeyboardLift } from './useAiKeyboardLift';
 import { useAiStrings } from '../i18n/AiStringsContext';
+import { useAiChatController } from '../hooks/useAiChat';
 
 export interface AiFloatingOverlayProps {
   /** When false, overlay is hidden (host RBAC / prefs). Default true. */
@@ -40,7 +41,7 @@ export function AiFloatingOverlay({
   const [overlayLayout, setOverlayLayout] = useState<AiOverlayLayout | null>(null);
   const [bubbleVisible, setBubbleVisible] = useState(false);
   const [panelVisible, setPanelVisible] = useState(false);
-  const [panelInitialMessage, setPanelInitialMessage] = useState<string | null>(null);
+  const controller = useAiChatController();
   const [buttonAnchor, setButtonAnchor] = useState<AiButtonPoint>(() =>
     getDefaultAiButtonPosition(insets)
   );
@@ -69,11 +70,17 @@ export function AiFloatingOverlay({
         onExpand(trimmed || undefined);
         return;
       }
-      setPanelInitialMessage(trimmed || null);
+      controller.startNewConversation();
+      if (trimmed) void controller.sendMessage(trimmed);
       setPanelVisible(true);
     },
-    [closeBubble, onExpand]
+    [closeBubble, controller, onExpand]
   );
+
+  const closePanel = useCallback(() => {
+    setPanelVisible(false);
+    controller.cancelStreaming();
+  }, [controller]);
 
   const handleBubbleSend = useCallback(
     (text: string) => {
@@ -91,7 +98,7 @@ export function AiFloatingOverlay({
           style={styles.backdrop}
           onPress={() => {
             closeBubble();
-            setPanelVisible(false);
+            closePanel();
           }}
           accessibilityRole="button"
           accessibilityLabel={strings.accessibilityClose}
@@ -99,10 +106,10 @@ export function AiFloatingOverlay({
       ) : null}
 
       <AiFloatingChatPanel
+        controller={controller}
         visible={panelVisible && !onExpand}
         anchor={buttonAnchor}
-        initialMessage={panelInitialMessage}
-        onClose={() => setPanelVisible(false)}
+        onClose={closePanel}
         onExpandFullPage={onOpenFullPage}
       />
 
@@ -136,8 +143,11 @@ const styles = StyleSheet.create({
     zIndex: 55,
     elevation: 55,
   },
+  // Above the backdrop (56) so the bubble's buttons and the FAB stay tappable.
   cluster: {
     ...StyleSheet.absoluteFillObject,
+    zIndex: 59,
+    elevation: 59,
   },
   backdrop: {
     ...StyleSheet.absoluteFillObject,

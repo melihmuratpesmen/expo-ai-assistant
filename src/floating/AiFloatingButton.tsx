@@ -41,12 +41,24 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
 }) => {
   const theme = useAiTheme();
   const strings = useAiStrings();
-  const insets = useSafeAreaInsets();
+  const {
+    top: insetTop,
+    bottom: insetBottom,
+    left: insetLeft,
+    right: insetRight,
+  } = useSafeAreaInsets();
+  const layoutWidth = layout?.width ?? 0;
+  const layoutHeight = layout?.height ?? 0;
 
   const defaultPosition = useMemo(
-    () => getDefaultAiButtonPosition(insets, layout),
-    [insets.top, insets.bottom, insets.left, insets.right, layout?.width, layout?.height]
+    () =>
+      getDefaultAiButtonPosition(
+        { top: insetTop, bottom: insetBottom, left: insetLeft, right: insetRight },
+        layoutWidth || layoutHeight ? { width: layoutWidth, height: layoutHeight } : null
+      ),
+    [insetTop, insetBottom, insetLeft, insetRight, layoutWidth, layoutHeight]
   );
+  const { x: defaultX, y: defaultY } = defaultPosition;
 
   const translateX = useSharedValue(defaultPosition.x);
   const translateY = useSharedValue(defaultPosition.y);
@@ -64,13 +76,13 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
 
   useEffect(() => {
     const window = Dimensions.get('window');
-    const width = layout?.width || window.width;
-    const height = layout?.height || window.height;
-    const nested = !!layout && layout.height > 0;
-    const leftInset = nested ? 0 : insets.left;
-    const rightInset = nested ? 0 : insets.right;
-    const topInset = nested ? 0 : insets.top;
-    const bottomInset = nested ? 0 : insets.bottom;
+    const width = layoutWidth || window.width;
+    const height = layoutHeight || window.height;
+    const nested = layoutHeight > 0;
+    const leftInset = nested ? 0 : insetLeft;
+    const rightInset = nested ? 0 : insetRight;
+    const topInset = nested ? 0 : insetTop;
+    const bottomInset = nested ? 0 : insetBottom;
 
     minX.value = leftInset + 8;
     maxX.value = width - AI_BUTTON_SIZE - rightInset - 8;
@@ -81,20 +93,20 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
     screenCenterX.value = width / 2;
     screenHeight.value = nested ? height : window.height;
 
-    translateX.value = defaultPosition.x;
-    translateY.value = defaultPosition.y;
-    startX.value = defaultPosition.x;
-    startY.value = defaultPosition.y;
-    onPositionChange?.(defaultPosition);
+    translateX.value = defaultX;
+    translateY.value = defaultY;
+    startX.value = defaultX;
+    startY.value = defaultY;
+    onPositionChange?.({ x: defaultX, y: defaultY });
   }, [
-    defaultPosition.x,
-    defaultPosition.y,
-    layout?.width,
-    layout?.height,
-    insets.left,
-    insets.right,
-    insets.top,
-    insets.bottom,
+    defaultX,
+    defaultY,
+    layoutWidth,
+    layoutHeight,
+    insetLeft,
+    insetRight,
+    insetTop,
+    insetBottom,
     minX,
     maxX,
     minY,

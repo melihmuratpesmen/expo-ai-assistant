@@ -14,7 +14,7 @@ import { AiMessageActions } from './AiMessageActions';
 import { AiReasoningBadge } from './AiReasoningBadge';
 import { AiText } from './AiText';
 
-interface AiMessageBubbleProps {
+export interface AiMessageBubbleProps {
   message: AiChatMessage;
   /** Show regenerate control (typically last assistant message). */
   showRegenerate?: boolean;
@@ -28,15 +28,15 @@ function computeTrailingText(content: string, hasBlocks: boolean): string | unde
   return tail.length > 0 ? tail : undefined;
 }
 
-export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
+function AiMessageBubbleImpl({
   message,
   showRegenerate = false,
   onRegenerate,
-}) => {
+}: AiMessageBubbleProps) {
   const theme = useAiTheme();
   const slots = useAiSlots();
   const strings = useAiStrings();
-  const { isDark } = theme.meta;
+  const { bubble } = theme.colors;
 
   if (slots.renderMessage) {
     return <>{slots.renderMessage(message)}</>;
@@ -58,14 +58,8 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
     return (
       <View style={[styles.row, styles.rowUser]}>
         <View style={styles.userColumn}>
-          <View
-            style={[
-              styles.bubble,
-              styles.userBubble,
-              { backgroundColor: theme.colors.primary.DEFAULT },
-            ]}
-          >
-            <AiText variant="body" style={[styles.text, { color: theme.colors.primary.onPrimary }]}>
+          <View style={[styles.bubble, styles.userBubble, { backgroundColor: bubble.user }]}>
+            <AiText variant="body" style={[styles.text, { color: bubble.userText }]}>
               {message.content}
             </AiText>
           </View>
@@ -95,7 +89,7 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
               styles.assistantBubble,
               isWide && styles.assistantBubbleWide,
               {
-                backgroundColor: isDark ? '#1F2937' : '#F3F4F6',
+                backgroundColor: bubble.assistant,
                 borderColor:
                   message.status === 'error' ? theme.colors.error.DEFAULT : 'transparent',
                 borderWidth: message.status === 'error' ? 1 : 0,
@@ -105,7 +99,7 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
             {showTypingDots ? (
               <AiTypingIndicator />
             ) : showErrorFallback ? (
-              <AiText variant="body" style={[styles.text, { color: theme.colors.text.DEFAULT }]}>
+              <AiText variant="body" style={[styles.text, { color: bubble.assistantText }]}>
                 {strings.errorStream}
               </AiText>
             ) : hasBlocks ? (
@@ -115,7 +109,7 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
                 <AiMessageContent blocks={message.blocks!} trailingText={trailingText} />
               )
             ) : (
-              <AiMarkdownText style={[styles.text, { color: theme.colors.text.DEFAULT }]}>
+              <AiMarkdownText style={[styles.text, { color: bubble.assistantText }]}>
                 {message.content}
               </AiMarkdownText>
             )}
@@ -148,7 +142,13 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
       </View>
     </View>
   );
-};
+}
+
+/**
+ * One chat message. Memoized: while a reply streams, only the bubble whose
+ * `message` object changed re-renders.
+ */
+export const AiMessageBubble = React.memo(AiMessageBubbleImpl);
 
 const styles = StyleSheet.create({
   row: {

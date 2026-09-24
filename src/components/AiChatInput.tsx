@@ -28,7 +28,6 @@ export const AiChatInput: React.FC<AiChatInputProps> = ({
 }) => {
   const theme = useAiTheme();
   const strings = useAiStrings();
-  const { isDark } = theme.meta;
   const [value, setValue] = useState('');
   const Input = TextInputComponent ?? TextInput;
   const placeholder = placeholderProp ?? strings.inputPlaceholder;
@@ -47,7 +46,7 @@ export const AiChatInput: React.FC<AiChatInputProps> = ({
       style={[
         styles.container,
         {
-          backgroundColor: isDark ? '#1F2937' : '#F3F4F6',
+          backgroundColor: theme.colors.surface.input,
           borderColor: theme.colors.border.DEFAULT,
         },
       ]}

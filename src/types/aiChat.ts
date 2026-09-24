@@ -50,32 +50,3 @@ export interface AiConversation {
   createdAt: number;
   updatedAt: number;
 }
-
-export type ContentBlockDTO = {
-  type: string;
-  content?: string;
-  [key: string]: unknown;
-};
-
-/** Common history role encodings used by some backends. */
-export type HistoryRoleDTO = 'USER' | 'MODEL' | 'user' | 'assistant';
-
-export interface HistoryFunctionCallDTO {
-  id?: string;
-  callId?: string;
-  functionName?: string;
-  functionLabel?: string;
-  reasoning?: string;
-  frontendData?: unknown;
-}
-
-export interface HistoryMessageItemDTO {
-  role: HistoryRoleDTO;
-  content: string | ContentBlockDTO[];
-  timestamp: number;
-  imageUrl?: string | null;
-  functionCalls?: HistoryFunctionCallDTO[] | null;
-}
-
-/** @deprecated Use HistoryRoleDTO */
-export type ChatbotMessageRoleDTO = HistoryRoleDTO;

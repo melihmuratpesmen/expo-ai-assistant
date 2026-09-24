@@ -37,7 +37,6 @@ function resolveColumns(rows: Record<string, unknown>[]): TableColumn[] {
 export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _functionName }) => {
   const theme = useAiTheme();
   const strings = useAiStrings();
-  const { isDark } = theme.meta;
   const [page, setPage] = useState(1);
 
   const columns = useMemo(() => resolveColumns(rows), [rows]);
@@ -46,8 +45,8 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
   const start = (safePage - 1) * AI_DATA_TABLE_PAGE_SIZE;
   const displayRows = rows.slice(start, start + AI_DATA_TABLE_PAGE_SIZE);
 
-  const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-  const headerBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+  const borderColor = theme.colors.border.subtle;
+  const headerBg = theme.colors.surface.subtle;
   const muted = theme.colors.text[500];
 
   if (rows.length === 0 || columns.length === 0) {

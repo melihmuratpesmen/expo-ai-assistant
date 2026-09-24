@@ -20,4 +20,6 @@ module.exports = {
     'node_modules/(?!((jest-)?react-native(-.*)?|@react-native(-community)?|@expo|expo(-.*)?|@gorhom)/)',
   ],
   testMatch: ['**/__tests__/**/*.test.ts?(x)'],
+  // First runs transform React Native from scratch, which can take a while.
+  testTimeout: 30000,
 };

@@ -6,9 +6,11 @@ import { useAiStrings } from '../i18n/AiStringsContext';
 import { fontSize, radius, spacing } from '../theme/tokens';
 import type { AiFunctionCall } from '../types/aiChat';
 import { AiFrontendDataRenderer } from './AiFrontendDataRenderer';
+import { useAiSlots, type AiToolRenderer } from '../provider/slots';
+import { getTypedFrontendDataType } from '../lib/frontendDataFormat';
 import { AiText } from './AiText';
 
-interface AiFunctionCallCardProps {
+export interface AiFunctionCallCardProps {
   functionCall: AiFunctionCall;
 }
 
@@ -22,7 +24,7 @@ type StatusVisual = {
 export const AiFunctionCallCard: React.FC<AiFunctionCallCardProps> = ({ functionCall }) => {
   const theme = useAiTheme();
   const strings = useAiStrings();
-  const { isDark } = theme.meta;
+  const { toolRenderers } = useAiSlots();
   const [expanded, setExpanded] = useState(true);
 
   const { name, label, status, reasoning, frontendData } = functionCall;
@@ -61,8 +63,8 @@ export const AiFunctionCallCard: React.FC<AiFunctionCallCardProps> = ({ function
 
   const hasData = status === 'completed' && frontendData !== undefined && frontendData !== null;
 
-  const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
-  const cardBg = isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF';
+  const borderColor = theme.colors.border.subtle;
+  const cardBg = theme.colors.surface.card;
 
   return (
     <View style={[styles.card, { backgroundColor: cardBg, borderColor }]}>
@@ -73,12 +75,7 @@ export const AiFunctionCallCard: React.FC<AiFunctionCallCardProps> = ({ function
         accessibilityRole={hasData ? 'button' : undefined}
         accessibilityState={hasData ? { expanded } : undefined}
       >
-        <View
-          style={[
-            styles.iconWrap,
-            { backgroundColor: theme.colors.primary.subtle ?? 'rgba(1,102,254,0.1)' },
-          ]}
-        >
+        <View style={[styles.iconWrap, { backgroundColor: theme.colors.primary.subtle }]}>
           <Ionicons name="construct-outline" size={16} color={theme.colors.primary.DEFAULT} />
         </View>
 
@@ -123,12 +120,26 @@ export const AiFunctionCallCard: React.FC<AiFunctionCallCardProps> = ({ function
 
       {hasData && expanded && (
         <View style={[styles.body, { borderTopColor: borderColor }]}>
-          <AiFrontendDataRenderer data={frontendData} functionName={name} />
+          <AiFunctionCallBody functionCall={functionCall} toolRenderers={toolRenderers} />
         </View>
       )}
     </View>
   );
 };
+
+function AiFunctionCallBody({
+  functionCall,
+  toolRenderers,
+}: {
+  functionCall: AiFunctionCall;
+  toolRenderers?: Record<string, AiToolRenderer>;
+}) {
+  const { name, frontendData } = functionCall;
+  const dataType = getTypedFrontendDataType(frontendData);
+  const Renderer = toolRenderers?.[name] ?? (dataType ? toolRenderers?.[dataType] : undefined);
+  if (Renderer) return <Renderer functionCall={functionCall} data={frontendData} />;
+  return <AiFrontendDataRenderer data={frontendData} functionName={name} />;
+}
 
 const styles = StyleSheet.create({
   card: {

@@ -12,20 +12,47 @@ import { Ionicons } from '@expo/vector-icons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { AiAssistantProvider, createMockTransport, useAiTheme } from 'expo-ai-assistant';
+import {
+  AiAssistantProvider,
+  createMockTransport,
+  useAiTheme,
+  type AiSuggestion,
+} from 'expo-ai-assistant';
 import { AiChatScreen, AiConversationHistoryScreen } from 'expo-ai-assistant/full-page';
 import { AiFloatingOverlay } from 'expo-ai-assistant/floating';
-import { AiQuickAskProvider, useAiQuickAskSession } from 'expo-ai-assistant/bottom-sheet';
-import { AiChatModalProvider, useAiChatModalSession } from 'expo-ai-assistant/modal';
+import { AiQuickAskProvider, useAiQuickAsk } from 'expo-ai-assistant/bottom-sheet';
+import { AiChatModalProvider, useAiChatModal } from 'expo-ai-assistant/modal';
 import { useCircularThemeReveal } from './ThemeCircularReveal';
 import { version as DEMO_VERSION } from '../package.json';
 
 type Tab = 'full' | 'floating' | 'sheet' | 'modal' | 'history';
+
+/** Prompts that trigger the mock transport's tool / table demos. */
+const DEMO_SUGGESTIONS: AiSuggestion[] = [
+  {
+    id: 'capabilities',
+    label: 'What can you do?',
+    prompt: 'What can you help me with?',
+    icon: 'sparkles',
+  },
+  {
+    id: 'table',
+    label: 'Show a table',
+    prompt: 'Show students as a table',
+    icon: 'grid-outline',
+  },
+  {
+    id: 'summary',
+    label: 'Quick summary',
+    prompt: 'Give me a short summary for today.',
+    icon: 'list-outline',
+  },
+];
 type ColorScheme = 'light' | 'dark';
 
 function SheetDemo() {
   const theme = useAiTheme();
-  const { open } = useAiQuickAskSession();
+  const { open } = useAiQuickAsk();
   return (
     <View style={styles.centered}>
       <Text style={[styles.hint, { color: theme.colors.text[500] }]}>
@@ -43,7 +70,7 @@ function SheetDemo() {
 
 function ModalDemo() {
   const theme = useAiTheme();
-  const { open } = useAiChatModalSession();
+  const { open } = useAiChatModal();
   return (
     <View style={styles.centered}>
       <Text style={[styles.hint, { color: theme.colors.text[500] }]}>
@@ -61,7 +88,7 @@ function ModalDemo() {
 
 function FloatingWithSheetBridge() {
   const theme = useAiTheme();
-  const { open } = useAiQuickAskSession();
+  const { open } = useAiQuickAsk();
   return (
     <>
       <View style={styles.centered}>
@@ -168,6 +195,7 @@ function DemoChrome({
         {tab === 'full' ? (
           <AiChatScreen
             conversationId={conversationId}
+            suggestions={DEMO_SUGGESTIONS}
             onOpenHistory={() => setTab('history')}
           />
         ) : null}
@@ -219,8 +247,12 @@ function DemoTree({
           welcomeSubtitle: apiKeyHint(config),
         }}
       >
-        <AiQuickAskProvider onOpenFullPage={onOpenFull}>
-          <AiChatModalProvider onOpenFullPage={onOpenFull} presentation="card">
+        <AiQuickAskProvider onOpenFullPage={onOpenFull} suggestions={DEMO_SUGGESTIONS}>
+          <AiChatModalProvider
+            onOpenFullPage={onOpenFull}
+            presentation="card"
+            suggestions={DEMO_SUGGESTIONS}
+          >
             <DemoChrome
               tab={tab}
               setTab={setTab}

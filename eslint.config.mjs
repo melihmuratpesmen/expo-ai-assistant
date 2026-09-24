@@ -19,6 +19,9 @@ export default tseslint.config(
       '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
       // Optional peers are resolved lazily with require().
       '@typescript-eslint/no-require-imports': 'off',
+      // Reanimated shared values are written through `.value` inside worklets,
+      // which the React Compiler rule reports as mutation of immutable values.
+      'react-hooks/immutability': 'off',
     },
   },
   {

@@ -10,6 +10,8 @@ export interface AiStrings {
   emptyHistory: string;
   emptyFloatingPrompt: string;
   preparingReply: string;
+  /** Accessibility label of the typing indicator. */
+  typing: string;
   deleteConversationTitle: string;
   deleteConversationMessage: (title: string) => string;
   cancel: string;
@@ -43,6 +45,7 @@ export interface AiStrings {
   recordCount: (count: number) => string;
   previousPage: string;
   nextPage: string;
+  scrollToBottom: string;
 }
 
 export const defaultStrings: AiStrings = {
@@ -57,6 +60,7 @@ export const defaultStrings: AiStrings = {
   emptyHistory: 'No conversations yet.',
   emptyFloatingPrompt: 'Ask a question...',
   preparingReply: 'Preparing a reply...',
+  typing: 'Assistant is typing',
   deleteConversationTitle: 'Delete conversation',
   deleteConversationMessage: title => `Delete “${title}”?`,
   cancel: 'Cancel',
@@ -89,6 +93,7 @@ export const defaultStrings: AiStrings = {
   recordCount: count => (count === 1 ? '1 record' : `${count} records`),
   previousPage: 'Previous page',
   nextPage: 'Next page',
+  scrollToBottom: 'Scroll to latest message',
 };
 
 export type AiStringsOverride = {

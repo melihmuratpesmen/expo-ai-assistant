@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { StyleSheet, View, Pressable } from 'react-native';
 import BottomSheet, {
   BottomSheetBackdrop,
@@ -7,15 +7,21 @@ import BottomSheet, {
   type BottomSheetFooterProps,
 } from '@gorhom/bottom-sheet';
 import { Ionicons } from '@expo/vector-icons';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAiChat } from '../hooks/useAiChat';
+import { useAiChatController } from '../hooks/useAiChat';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
-import { spacing, fontSize } from '../theme/tokens';
+import { spacing } from '../theme/tokens';
+import { AiChatFooter } from '../components/AiChatFooter';
 import { AiText } from '../components/AiText';
-import { AiQuickAskContext, type AiQuickAskContextValue } from './aiQuickAskContext';
-import { AiQuickAskMessages, AiBottomSheetChatInput } from './AiQuickAskMessages';
+import type { AiChatController } from '../core/AiChatController';
+import type { AiSuggestion } from '../types/aiContext';
+import {
+  AiQuickAskContext,
+  type AiQuickAskControls,
+  type AiQuickAskOpenOptions,
+} from './aiQuickAskContext';
+import { AiQuickAskMessages, AiBottomSheetTextInput } from './AiQuickAskMessages';
 
 export interface AiQuickAskProviderProps {
   children: ReactNode;
@@ -23,7 +29,16 @@ export interface AiQuickAskProviderProps {
   onOpenFullPage?: (conversationId: string | null) => void;
   title?: string;
   snapPoints?: (string | number)[];
+  /** Empty-state suggestions (defaults to `DEFAULT_SUGGESTIONS`). */
+  suggestions?: AiSuggestion[];
+  /**
+   * Expand to the highest snap point when a message is sent, so the reply is
+   * not hidden (gorhom locks list scrolling below the top snap point). Default true.
+   */
+  expandOnSend?: boolean;
 }
+
+const DEFAULT_SNAP_POINTS = ['58%', '90%'];
 
 /**
  * Self-contained bottom-sheet quick-ask surface.
@@ -35,23 +50,23 @@ export function AiQuickAskProvider({
   children,
   onOpenFullPage,
   title: titleProp,
-  snapPoints = ['58%', '90%'],
+  snapPoints = DEFAULT_SNAP_POINTS,
+  suggestions,
+  expandOnSend = true,
 }: AiQuickAskProviderProps) {
   const theme = useAiTheme();
   const strings = useAiStrings();
-  const insets = useSafeAreaInsets();
   const title = titleProp ?? strings.assistantTitle;
-  const chat = useAiChat();
-  const { sendMessage, startNewConversation, cancelStreaming, conversationId, isStreaming } = chat;
+  const controller = useAiChatController();
   const sheetRef = useRef<BottomSheet>(null);
   const [isActive, setIsActive] = useState(false);
-  const sentInitialRef = useRef(false);
+  const [initialIndex, setInitialIndex] = useState(0);
+  const topIndex = snapPoints.length - 1;
 
   const handleClose = useCallback(() => {
     setIsActive(false);
-    cancelStreaming();
-    sentInitialRef.current = false;
-  }, [cancelStreaming]);
+    controller.cancelStreaming();
+  }, [controller]);
 
   const close = useCallback(() => {
     sheetRef.current?.close();
@@ -59,38 +74,36 @@ export function AiQuickAskProvider({
   }, [handleClose]);
 
   const continueToFullChat = useCallback(() => {
-    const id = conversationId;
+    const { conversationId } = controller.getSnapshot();
     sheetRef.current?.close();
     handleClose();
-    onOpenFullPage?.(id);
-  }, [conversationId, handleClose, onOpenFullPage]);
+    onOpenFullPage?.(conversationId);
+  }, [controller, handleClose, onOpenFullPage]);
 
   const open = useCallback(
-    (options?: { initialMessage?: string }) => {
-      startNewConversation();
-      sentInitialRef.current = false;
-      setIsActive(true);
-
+    (options?: AiQuickAskOpenOptions) => {
+      controller.startNewConversation();
       const initialMessage = options?.initialMessage?.trim();
-      if (initialMessage) {
-        setTimeout(() => {
-          if (sentInitialRef.current) return;
-          sentInitialRef.current = true;
-          void sendMessage(initialMessage);
-        }, 120);
-      }
+      setInitialIndex(initialMessage && expandOnSend ? topIndex : 0);
+      setIsActive(true);
+      if (initialMessage) void controller.sendMessage(initialMessage);
     },
-    [sendMessage, startNewConversation]
+    [controller, expandOnSend, topIndex]
   );
 
-  const value = useMemo<AiQuickAskContextValue>(
-    () => ({
-      isActive,
-      chat,
-      open,
-      close,
-    }),
-    [chat, close, isActive, open]
+  useEffect(() => {
+    if (!isActive || !expandOnSend) return;
+    let count = controller.getSnapshot().messages.length;
+    return controller.subscribe(() => {
+      const next = controller.getSnapshot().messages.length;
+      if (next > count) sheetRef.current?.snapToIndex(topIndex);
+      count = next;
+    });
+  }, [controller, expandOnSend, isActive, topIndex]);
+
+  const value = useMemo<AiQuickAskControls>(
+    () => ({ isActive, open, close, controller }),
+    [close, controller, isActive, open]
   );
 
   const renderBackdrop = useCallback(
@@ -108,45 +121,25 @@ export function AiQuickAskProvider({
   const renderFooter = useCallback(
     (props: BottomSheetFooterProps) => (
       <BottomSheetFooter {...props} bottomInset={0}>
-        <View
-          style={[
-            styles.inputBar,
-            {
-              backgroundColor: theme.colors.bg.DEFAULT,
-              paddingBottom: Math.max(insets.bottom, spacing[2]),
-              borderTopColor: theme.colors.border.DEFAULT,
-            },
-          ]}
-        >
-          <AiBottomSheetChatInput
-            onSend={text => {
-              void sendMessage(text);
-            }}
-            isStreaming={isStreaming}
-            onStop={cancelStreaming}
-            placeholder={strings.continuePlaceholder}
-          />
-          <AiText style={[styles.disclaimer, { color: theme.colors.text[400] }]}>
-            {strings.disclaimer}
-          </AiText>
-        </View>
+        <SheetFooter controller={controller} />
       </BottomSheetFooter>
     ),
-    [
-      cancelStreaming,
-      insets.bottom,
-      isStreaming,
-      sendMessage,
-      strings.continuePlaceholder,
-      theme.colors.bg.DEFAULT,
-      theme.colors.border.DEFAULT,
-      theme.colors.text[400],
-    ]
+    [controller]
   );
 
   const listHeader = (
-    <View style={[styles.header, { borderBottomColor: theme.colors.border.DEFAULT }]}>
-      <AiText weight="semibold">{title}</AiText>
+    <View
+      style={[
+        styles.header,
+        {
+          backgroundColor: theme.colors.bg.DEFAULT,
+          borderBottomColor: theme.colors.border.DEFAULT,
+        },
+      ]}
+    >
+      <AiText weight="semibold" accessibilityRole="header">
+        {title}
+      </AiText>
       <View style={styles.headerActions}>
         {onOpenFullPage ? (
           <Pressable
@@ -177,7 +170,7 @@ export function AiQuickAskProvider({
         <View style={styles.sheetHost}>
           <BottomSheet
             ref={sheetRef}
-            index={0}
+            index={initialIndex}
             snapPoints={snapPoints}
             enablePanDownToClose
             enableHandlePanningGesture
@@ -192,11 +185,25 @@ export function AiQuickAskProvider({
             handleIndicatorStyle={{ backgroundColor: theme.colors.text[300] }}
             enableDynamicSizing={false}
           >
-            <AiQuickAskMessages header={listHeader} />
+            <AiQuickAskMessages header={listHeader} suggestions={suggestions} />
           </BottomSheet>
         </View>
       ) : null}
     </AiQuickAskContext.Provider>
+  );
+}
+
+/** gorhom handles the keyboard for the sheet, so the footer does not lift itself. */
+function SheetFooter({ controller }: { controller: AiChatController }) {
+  const strings = useAiStrings();
+  return (
+    <AiChatFooter
+      controller={controller}
+      placeholder={strings.continuePlaceholder}
+      liftWithKeyboard={false}
+      bordered
+      TextInputComponent={AiBottomSheetTextInput}
+    />
   );
 }
 
@@ -218,15 +225,5 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
-  },
-  inputBar: {
-    paddingTop: spacing[2],
-    gap: spacing[1.5],
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
-  disclaimer: {
-    textAlign: 'center',
-    paddingHorizontal: spacing[4],
-    fontSize: fontSize.xxs,
   },
 });

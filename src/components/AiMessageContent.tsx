@@ -101,13 +101,12 @@ function ListBlockView({ block }: { block: ListBlock }) {
 
 function CodeBlockView({ block }: { block: CodeBlock }) {
   const theme = useAiTheme();
-  const { isDark } = theme.meta;
   return (
     <View
       style={[
         styles.codeBox,
         {
-          backgroundColor: isDark ? '#111827' : '#F3F4F6',
+          backgroundColor: theme.colors.surface.code,
           borderColor: theme.colors.border.DEFAULT,
         },
       ]}
@@ -117,7 +116,13 @@ function CodeBlockView({ block }: { block: CodeBlock }) {
           {block.language}
         </AiText>
       )}
-      <AiText variant="caption" style={[styles.codeText, { color: theme.colors.text.DEFAULT }]}>
+      <AiText
+        variant="caption"
+        style={[
+          styles.codeText,
+          { color: theme.colors.text.DEFAULT, fontFamily: theme.fontFamily.mono },
+        ]}
+      >
         {block.content}
       </AiText>
     </View>
@@ -127,9 +132,8 @@ function CodeBlockView({ block }: { block: CodeBlock }) {
 function TableBlockView({ block }: { block: TableBlock }) {
   const theme = useAiTheme();
   const strings = useAiStrings();
-  const { isDark } = theme.meta;
   const borderColor = theme.colors.border.DEFAULT;
-  const headerBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+  const headerBg = theme.colors.surface.subtle;
   const colCount = Math.max(block.headers.length, ...block.rows.map(r => r.length), 1);
   const headers =
     block.headers.length > 0
@@ -172,7 +176,7 @@ function TableBlockView({ block }: { block: TableBlock }) {
                 { borderBottomColor: borderColor },
                 ri === block.rows.length - 1 && styles.tableLastRow,
                 ri % 2 === 1 && {
-                  backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
+                  backgroundColor: theme.colors.surface.stripe,
                 },
               ]}
             >
@@ -232,13 +236,12 @@ function AlertBlockView({ block }: { block: AlertBlock }) {
 
 function MetricBlockView({ block }: { block: MetricBlock }) {
   const theme = useAiTheme();
-  const { isDark } = theme.meta;
   return (
     <View
       style={[
         styles.metric,
         {
-          backgroundColor: isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF',
+          backgroundColor: theme.colors.surface.card,
           borderColor: theme.colors.border.DEFAULT,
         },
       ]}

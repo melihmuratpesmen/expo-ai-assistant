@@ -1,36 +1,35 @@
-import React, { useCallback, useEffect, useRef } from 'react';
-import {
-  StyleSheet,
-  View,
-  FlatList,
-  Pressable,
-  Keyboard,
-  Platform,
-  useWindowDimensions,
-} from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { StyleSheet, View, Pressable, useWindowDimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import { useAiChat } from '../hooks/useAiChat';
-import { AiMessageBubble } from '../components/AiMessageBubble';
-import { AiChatInput } from '../components/AiChatInput';
+import { useAiChatController } from '../hooks/useAiChat';
+import { AiChatFooter } from '../components/AiChatFooter';
+import { AiConversationView } from '../components/AiConversationView';
 import { AiText } from '../components/AiText';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { useKeyboardOpenHeight } from './useKeyboardOpenHeight';
 import { spacing, radius } from '../theme/tokens';
-import type { AiChatMessage } from '../types/aiChat';
+import type { AiChatController } from '../core/AiChatController';
 import type { AiButtonPoint } from './aiButtonPosition';
 import { AI_BUTTON_SIZE } from './aiButtonPosition';
 
 const PANEL_MAX_WIDTH = 360;
 const PANEL_HEIGHT = 420;
+const NO_SUGGESTIONS: never[] = [];
 
 export interface AiFloatingChatPanelProps {
   visible: boolean;
   anchor: AiButtonPoint;
+  /** Standalone mode only: sent when the panel opens. */
   initialMessage?: string | null;
   onClose: () => void;
   onExpandFullPage?: (conversationId: string | null) => void;
+  /**
+   * Conversation to show. When omitted, the panel owns one and starts a new
+   * conversation (sending `initialMessage`) each time it opens.
+   */
+  controller?: AiChatController;
 }
 
 /**
@@ -42,30 +41,20 @@ export function AiFloatingChatPanel({
   initialMessage,
   onClose,
   onExpandFullPage,
+  controller: controllerProp,
 }: AiFloatingChatPanelProps) {
   const theme = useAiTheme();
   const strings = useAiStrings();
-  const chat = useAiChat();
-  const {
-    messages,
-    isStreaming,
-    error,
-    sendMessage,
-    regenerateLastResponse,
-    startNewConversation,
-    cancelStreaming,
-    conversationId,
-  } = chat;
-  const listRef = useRef<FlatList<AiChatMessage>>(null);
-  const sentInitialRef = useRef(false);
-  const lastAssistantId = [...messages].reverse().find(m => m.role === 'assistant')?.id;
+  const ownController = useAiChatController();
+  const controller = controllerProp ?? ownController;
+  const openedRef = useRef(false);
   const keyboardOpenHeight = useKeyboardOpenHeight();
   const screen = useWindowDimensions();
-  const PANEL_WIDTH = Math.min(PANEL_MAX_WIDTH, screen.width - 32);
+  const panelWidth = Math.min(PANEL_MAX_WIDTH, screen.width - 32);
   const screenHeight = screen.height;
   const panelLeft = Math.min(
-    Math.max(anchor.x + AI_BUTTON_SIZE - PANEL_WIDTH, spacing[4]),
-    screen.width - PANEL_WIDTH - spacing[4]
+    Math.max(anchor.x + AI_BUTTON_SIZE - panelWidth, spacing[4]),
+    screen.width - panelWidth - spacing[4]
   );
   const panelTop = Math.max(
     Math.min(anchor.y - PANEL_HEIGHT - 12, screen.height - PANEL_HEIGHT - 24),
@@ -79,32 +68,20 @@ export function AiFloatingChatPanel({
     return { transform: [{ translateY: -lift }] };
   });
 
+  // Standalone mode: a fresh conversation per opening. The ref keeps this
+  // idempotent when effects run twice (StrictMode).
   useEffect(() => {
+    if (controllerProp) return;
     if (!visible) {
-      sentInitialRef.current = false;
+      openedRef.current = false;
       return;
     }
-    startNewConversation();
-  }, [visible]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  useEffect(() => {
-    if (!visible || !initialMessage?.trim() || sentInitialRef.current) return;
-    sentInitialRef.current = true;
-    const timer = setTimeout(() => {
-      void sendMessage(initialMessage.trim());
-    }, 80);
-    return () => clearTimeout(timer);
-  }, [visible, initialMessage, sendMessage]);
-
-  const scrollToEnd = useCallback(() => {
-    requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
-  }, []);
-
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const sub = Keyboard.addListener(showEvent, scrollToEnd);
-    return () => sub.remove();
-  }, [scrollToEnd]);
+    if (openedRef.current) return;
+    openedRef.current = true;
+    ownController.startNewConversation();
+    const text = initialMessage?.trim();
+    if (text) void ownController.sendMessage(text);
+  }, [controllerProp, initialMessage, ownController, visible]);
 
   if (!visible) return null;
 
@@ -116,18 +93,20 @@ export function AiFloatingChatPanel({
         {
           left: panelLeft,
           top: panelTop,
-          width: PANEL_WIDTH,
+          width: panelWidth,
           backgroundColor: theme.colors.bg.DEFAULT,
           borderColor: theme.colors.border.DEFAULT,
         },
       ]}
     >
       <View style={[styles.header, { borderBottomColor: theme.colors.border.DEFAULT }]}>
-        <AiText weight="semibold">{strings.assistantTitle}</AiText>
+        <AiText weight="semibold" accessibilityRole="header">
+          {strings.assistantTitle}
+        </AiText>
         <View style={styles.headerActions}>
           {onExpandFullPage ? (
             <Pressable
-              onPress={() => onExpandFullPage(conversationId)}
+              onPress={() => onExpandFullPage(controller.getSnapshot().conversationId)}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={strings.accessibilityExpand}
@@ -146,48 +125,21 @@ export function AiFloatingChatPanel({
         </View>
       </View>
 
-      <FlatList
-        ref={listRef}
-        style={styles.list}
-        data={messages}
-        keyExtractor={item => item.id}
-        renderItem={({ item }) => (
-          <AiMessageBubble
-            message={item}
-            showRegenerate={
-              !isStreaming && item.role === 'assistant' && item.id === lastAssistantId
-            }
-            onRegenerate={() => {
-              void regenerateLastResponse();
-              scrollToEnd();
-            }}
-          />
-        )}
+      <AiConversationView
+        controller={controller}
+        suggestions={NO_SUGGESTIONS}
+        emptyVariant="minimal"
         contentContainerStyle={styles.listContent}
-        onContentSizeChange={scrollToEnd}
-        keyboardShouldPersistTaps="handled"
-        ListEmptyComponent={
-          <AiText style={[styles.empty, { color: theme.colors.text[500] }]}>
-            {strings.emptyFloatingPrompt}
-          </AiText>
-        }
+        showScrollToBottomButton={false}
       />
 
-      {error ? (
-        <AiText style={[styles.error, { color: theme.colors.error.DEFAULT }]}>{error}</AiText>
-      ) : null}
-
-      <View style={styles.inputWrap}>
-        <AiChatInput
-          onSend={text => {
-            void sendMessage(text);
-            scrollToEnd();
-          }}
-          isStreaming={isStreaming}
-          onStop={cancelStreaming}
-          placeholder={strings.continuePlaceholder}
-        />
-      </View>
+      <AiChatFooter
+        controller={controller}
+        placeholder={strings.continuePlaceholder}
+        liftWithKeyboard={false}
+        showDisclaimer={false}
+        bottomPadding={spacing[2]}
+      />
     </Animated.View>
   );
 }
@@ -215,9 +167,5 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
-  list: { flex: 1 },
-  listContent: { paddingVertical: spacing[2] },
-  empty: { textAlign: 'center', padding: spacing[4] },
-  error: { textAlign: 'center', paddingHorizontal: spacing[3], marginBottom: spacing[1] },
-  inputWrap: { paddingBottom: spacing[2] },
+  listContent: { flexGrow: 1, paddingVertical: spacing[2] },
 });
