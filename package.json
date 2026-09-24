@@ -2,46 +2,50 @@
   "name": "expo-ai-assistant",
   "version": "0.1.14",
   "description": "Surface-first AI chat kit for Expo and React Native — pluggable transport (OpenAI-compatible default), full-page, floating, modal, and optional bottom-sheet.",
-  "main": "src/index.ts",
-  "types": "src/index.ts",
-  "react-native": "src/index.ts",
-  "source": "src/index.ts",
+  "source": "./src/index.ts",
+  "main": "./lib/module/index.js",
+  "types": "./lib/typescript/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "react-native": "./src/index.ts",
-      "default": "./src/index.ts"
+      "expo-ai-assistant-source": "./src/index.ts",
+      "types": "./lib/typescript/index.d.ts",
+      "default": "./lib/module/index.js"
     },
     "./full-page": {
-      "types": "./src/full-page/index.ts",
-      "react-native": "./src/full-page/index.ts",
-      "default": "./src/full-page/index.ts"
+      "expo-ai-assistant-source": "./src/full-page/index.ts",
+      "types": "./lib/typescript/full-page/index.d.ts",
+      "default": "./lib/module/full-page/index.js"
     },
     "./floating": {
-      "types": "./src/floating/index.ts",
-      "react-native": "./src/floating/index.ts",
-      "default": "./src/floating/index.ts"
+      "expo-ai-assistant-source": "./src/floating/index.ts",
+      "types": "./lib/typescript/floating/index.d.ts",
+      "default": "./lib/module/floating/index.js"
     },
     "./bottom-sheet": {
-      "types": "./src/bottom-sheet/index.ts",
-      "react-native": "./src/bottom-sheet/index.ts",
-      "default": "./src/bottom-sheet/index.ts"
+      "expo-ai-assistant-source": "./src/bottom-sheet/index.ts",
+      "types": "./lib/typescript/bottom-sheet/index.d.ts",
+      "default": "./lib/module/bottom-sheet/index.js"
     },
     "./modal": {
-      "types": "./src/modal/index.ts",
-      "react-native": "./src/modal/index.ts",
-      "default": "./src/modal/index.ts"
+      "expo-ai-assistant-source": "./src/modal/index.ts",
+      "types": "./lib/typescript/modal/index.d.ts",
+      "default": "./lib/module/modal/index.js"
     },
     "./package.json": "./package.json"
   },
   "files": [
     "src",
+    "lib",
     "!**/__tests__",
+    "!**/__mocks__",
+    "!**/.*",
     "LICENSE",
     "README.md",
     "CHANGELOG.md"
   ],
   "scripts": {
+    "build": "bob build",
+    "prepare": "bob build",
     "typecheck": "tsc --noEmit",
     "test": "jest",
     "verify:gorhom": "node scripts/verify-gorhom-isolation.js",
@@ -116,6 +120,7 @@
     "prettier": "^3.9.9",
     "react": "19.1.0",
     "react-native": "0.81.5",
+    "react-native-builder-bob": "^0.43.1",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-keyboard-controller": "1.18.5",
     "react-native-reanimated": "~4.1.1",
@@ -126,5 +131,23 @@
   },
   "publishConfig": {
     "access": "public"
+  },
+  "react-native-builder-bob": {
+    "source": "src",
+    "output": "lib",
+    "targets": [
+      [
+        "module",
+        {
+          "esm": true
+        }
+      ],
+      [
+        "typescript",
+        {
+          "project": "tsconfig.build.json"
+        }
+      ]
+    ]
   }
 }

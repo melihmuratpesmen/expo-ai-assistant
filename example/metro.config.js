@@ -20,4 +20,11 @@ config.resolver.extraNodeModules = {
   'expo-ai-assistant': libraryRoot,
 };
 
+// Resolve the library's TypeScript source (package.json "exports" condition)
+// so the demo does not need a `bob build` after every change.
+config.resolver.unstable_conditionNames = [
+  'expo-ai-assistant-source',
+  ...(config.resolver.unstable_conditionNames ?? []),
+];
+
 module.exports = config;
