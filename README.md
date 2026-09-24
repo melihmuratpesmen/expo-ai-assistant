@@ -9,7 +9,7 @@ Bring your own backend. Ship full-page, floating, modal, or bottom-sheet chat UI
 [![Expo Go](https://img.shields.io/badge/Expo%20Go-SDK%2054-000020?logo=expo)](#try-in-expo-go)
 [![TypeScript](https://img.shields.io/badge/TypeScript-ready-3178c6?logo=typescript&logoColor=white)](./src/index.ts)
 
-`0.x` — public API may evolve; see [changelog](./CHANGELOG.md).
+`0.x` — public API may evolve; see the [changelog](./CHANGELOG.md) (0.1 → 0.2 notes included).
 
 ---
 
@@ -34,73 +34,56 @@ Scan with **Expo Go (SDK 54)** — offline mock transport, no API key needed.
   <code>exp://u.expo.dev/645b533c-f76d-4c2d-a725-a7420b210ce7?runtime-version=exposdk%3A54.0.0&amp;channel-name=preview</code>
 </p>
 
-Demo tabs: full page · floating · bottom sheet · modal · history.
-
-Local playground: [example/README.md](./example/README.md).
+Demo tabs: full page · floating · bottom sheet · modal · history. Local playground: [example/README.md](./example/README.md).
 
 ---
 
-## Positioning
+## Highlights
 
-- **Surfaces are independent** — import only what you need
-- **Transport is pluggable** — default OpenAI-compatible Chat Completions, or a fully custom `AiTransport`
-- **UI is editable** — theme, strings (i18n), render slots, lifecycle callbacks
-
----
-
-## Surfaces
-
-| Entry        | Import                           | Optional peer          |
-| ------------ | -------------------------------- | ---------------------- |
-| Core         | `expo-ai-assistant`              | —                      |
-| Full page    | `expo-ai-assistant/full-page`    | —                      |
-| Floating     | `expo-ai-assistant/floating`     | —                      |
-| Modal        | `expo-ai-assistant/modal`        | —                      |
-| Bottom sheet | `expo-ai-assistant/bottom-sheet` | `@gorhom/bottom-sheet` |
-
-See [docs/SURFACES.md](./docs/SURFACES.md).
+- **Independent surfaces** — import only what you use; only `./bottom-sheet` pulls `@gorhom/bottom-sheet`
+- **Pluggable transport** — OpenAI-compatible Chat Completions out of the box, or any backend via `AiTransport`
+- **Smooth streaming** — tokens are applied once per frame, bubbles are memoized, and surfaces subscribe only to the state they render
+- **Stick-to-bottom list** — follows the reply while you are at the bottom, stops when you scroll up to read, "jump to latest" button
+- **Editable UI** — theme tokens, i18n strings, render slots, custom tool-card renderers, lifecycle callbacks
+- **Tool calls & rich content** — tool cards, tables, key/value data, content blocks (tables, lists, code, alerts, metrics)
 
 ---
 
 ## Installation
 
 ```bash
-npx expo install expo-ai-assistant react-native-gesture-handler react-native-reanimated react-native-safe-area-context react-native-keyboard-controller
-npm install @expo/vector-icons
+npx expo install expo-ai-assistant react-native-gesture-handler react-native-reanimated react-native-safe-area-context react-native-keyboard-controller @expo/vector-icons
 ```
 
-**Optional** (bottom-sheet surface only):
+Optional:
 
 ```bash
-npx expo install @gorhom/bottom-sheet
+npx expo install @gorhom/bottom-sheet            # bottom-sheet surface
+npx expo install react-native-markdown-display   # markdown rendering
+npx expo install expo-clipboard                   # copy action
 ```
 
-**Required app setup**
+**App setup**
 
 1. Wrap the app in `GestureHandlerRootView`
 2. Wrap the app in `KeyboardProvider` from `react-native-keyboard-controller`
 3. Enable the Reanimated Babel plugin
 4. Wrap chat trees in `AiAssistantProvider`
 
-### Peer dependencies
-
-| Package                            | Required                                      |
-| ---------------------------------- | --------------------------------------------- |
-| `react`, `react-native`            | Yes                                           |
-| `react-native-gesture-handler`     | Yes                                           |
-| `react-native-reanimated`          | Yes                                           |
-| `react-native-keyboard-controller` | Yes — keyboard lift (same pattern as MyExamy) |
-| `react-native-safe-area-context`   | Yes                                           |
-| `@expo/vector-icons`               | Yes                                           |
-| `@gorhom/bottom-sheet`             | Optional — only for `./bottom-sheet`          |
-| `expo-clipboard`                   | Optional — nicer copy action                  |
-| `react-native-markdown-display`    | Optional — markdown rendering                 |
+| Peer                                                   | Required                                  |
+| ------------------------------------------------------ | ----------------------------------------- |
+| `react`, `react-native`                                | Yes                                       |
+| `react-native-gesture-handler`                         | Yes                                       |
+| `react-native-reanimated`                              | Yes                                       |
+| `react-native-keyboard-controller`                     | Yes — keyboard-aware composer             |
+| `react-native-safe-area-context`, `@expo/vector-icons` | Yes                                       |
+| `@gorhom/bottom-sheet`                                 | Only for `expo-ai-assistant/bottom-sheet` |
+| `react-native-markdown-display`                        | Optional — markdown in replies            |
+| `expo-clipboard`                                       | Optional — nicer copy action              |
 
 ---
 
 ## Quick start
-
-### Default transport (OpenAI-compatible)
 
 ```tsx
 import { AiAssistantProvider } from 'expo-ai-assistant';
@@ -111,7 +94,9 @@ export default function App() {
     <AiAssistantProvider
       config={{
         openai: {
-          apiKey: () => process.env.EXPO_PUBLIC_OPENAI_API_KEY ?? null,
+          // Your proxy — see "Keep your API key off the device" below.
+          baseUrl: 'https://your-app.expo.app/api',
+          chatPath: '/chat',
           model: 'gpt-4o-mini',
         },
       }}
@@ -122,138 +107,253 @@ export default function App() {
 }
 ```
 
-### Custom transport
+Offline / demo: `config={{ transport: createMockTransport() }}`.
 
-```tsx
-import { AiAssistantProvider, type AiTransport, createMockTransport } from 'expo-ai-assistant';
+### Keep your API key off the device
 
-const transport: AiTransport = {
-  async streamChat({ userMessage, handlers }) {
-    handlers.onTextDelta?.(userMessage, userMessage);
-    return { text: userMessage, conversationId: '1' };
-  },
-};
+> [!WARNING]
+> Anything shipped in the app bundle can be extracted — including `EXPO_PUBLIC_*` environment variables, even when read inside an `apiKey: () => …` function. Use a provider key in the app only for local prototypes.
 
-<AiAssistantProvider config={{ transport /* or createMockTransport() */ }}>…</AiAssistantProvider>;
+Put the key behind a server route and point the transport at it. With [Expo Router API routes](https://docs.expo.dev/router/web/api-routes/) (enable server output, e.g. `"web": { "output": "server" }`, and deploy with EAS Hosting or another host):
+
+```ts
+// app/api/chat+api.ts — runs on the server; OPENAI_API_KEY never reaches the app
+export async function POST(request: Request) {
+  const { messages } = await request.json();
+
+  // Authenticate your user here (session cookie, bearer token, …) before spending tokens.
+
+  const upstream = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      'Content-Type': 'application/json',
+    },
+    // Pin the model and limits server-side instead of trusting the client.
+    body: JSON.stringify({ model: 'gpt-4o-mini', messages, stream: true, max_tokens: 1024 }),
+  });
+
+  // Pass the SSE stream straight through.
+  return new Response(upstream.body, {
+    status: upstream.status,
+    headers: { 'Content-Type': upstream.headers.get('Content-Type') ?? 'text/event-stream' },
+  });
+}
 ```
 
-### Modal (no gorhom)
+```tsx
+createOpenAICompatibleTransport({
+  baseUrl: 'https://your-app.expo.app/api',
+  chatPath: '/chat',
+  model: 'gpt-4o-mini',
+  // No apiKey: the server adds it. Send your own auth instead:
+  getHeaders: async () => ({ Authorization: `Bearer ${await getSessionToken()}` }),
+});
+```
+
+### Custom transport
+
+Any backend works — implement `streamChat` and call the handlers as data arrives:
 
 ```tsx
-import { AiChatModalProvider, useAiChatModalSession } from 'expo-ai-assistant/modal';
+import type { AiTransport } from 'expo-ai-assistant';
 
-function OpenButton() {
-  const { open } = useAiChatModalSession();
+const transport: AiTransport = {
+  async streamChat({ messages, userMessage, conversationId, signal, handlers }) {
+    // stream from your API…
+    handlers.onTextDelta?.(delta, fullTextSoFar);
+    handlers.onToolStart?.({ id, name, label });
+    handlers.onToolComplete?.({ id, name, frontendData });
+    return { text: fullText, conversationId: 'server-session-id' };
+  },
+  // Optional: persisted history for AiConversationHistoryScreen
+  listSessions,
+  getHistory,
+  deleteSession,
+};
+```
+
+Contract notes: throw on fatal errors (the hook reports them once), reject with an `AbortError` when `signal` aborts, and treat `messages` as prior context (failed or empty assistant turns are already filtered out).
+
+---
+
+## Surfaces
+
+| Entry        | Import                           | Main API                                      |
+| ------------ | -------------------------------- | --------------------------------------------- |
+| Core         | `expo-ai-assistant`              | provider, hooks, primitives, transports       |
+| Full page    | `expo-ai-assistant/full-page`    | `AiChatScreen`, `AiConversationHistoryScreen` |
+| Floating     | `expo-ai-assistant/floating`     | `AiFloatingOverlay`                           |
+| Modal        | `expo-ai-assistant/modal`        | `AiChatModalProvider`, `useAiChatModal`       |
+| Bottom sheet | `expo-ai-assistant/bottom-sheet` | `AiQuickAskProvider`, `useAiQuickAsk`         |
+
+See [docs/SURFACES.md](./docs/SURFACES.md).
+
+### Modal
+
+```tsx
+import { AiChatModalProvider, useAiChatModal } from 'expo-ai-assistant/modal';
+
+function AskButton() {
+  // Controls only — this button does not re-render while replies stream.
+  const { open } = useAiChatModal();
   return <Button title="Ask" onPress={() => open({ initialMessage: 'Hello' })} />;
 }
 
-<AiChatModalProvider presentation="card" /* or "fullscreen" */>
-  <OpenButton />
+<AiChatModalProvider presentation="card" /* or "fullscreen" */ suggestions={mySuggestions}>
+  <AskButton />
 </AiChatModalProvider>;
 ```
 
-### Floating → sheet / modal (host composition)
+Need live chat state next to the controls? `useAiChatModalSession()` returns `{ isActive, open, close, chat }`.
+
+### Bottom sheet
+
+```tsx
+import { AiQuickAskProvider, useAiQuickAsk } from 'expo-ai-assistant/bottom-sheet';
+
+<AiQuickAskProvider onOpenFullPage={id => navigate('Chat', { id })}>
+  <Screen />
+</AiQuickAskProvider>;
+
+const { open } = useAiQuickAsk();
+open({ initialMessage: 'Summarize this page' });
+```
+
+The sheet expands to its top snap point when a message is sent (gorhom locks list scrolling below it); pass `expandOnSend={false}` to opt out.
+
+### Floating → sheet / modal
 
 ```tsx
 import { AiFloatingOverlay } from 'expo-ai-assistant/floating';
-import { useAiChatModalSession } from 'expo-ai-assistant/modal';
+import { useAiQuickAsk } from 'expo-ai-assistant/bottom-sheet';
 
 function Bridge() {
-  const { open } = useAiChatModalSession();
+  const { open } = useAiQuickAsk();
   return <AiFloatingOverlay onExpand={draft => open({ initialMessage: draft })} />;
+}
+```
+
+Without `onExpand`, the overlay opens its built-in compact chat panel.
+
+---
+
+## Headless
+
+Build your own screen from the hook and primitives:
+
+```tsx
+import { useAiChat, AiMessageList, AiChatInput } from 'expo-ai-assistant';
+
+function MyChat() {
+  const chat = useAiChat();
+  return (
+    <View style={{ flex: 1 }}>
+      <AiMessageList
+        messages={chat.messages}
+        isStreaming={chat.isStreaming}
+        onRegenerate={chat.regenerateLastResponse}
+      />
+      <AiChatInput
+        onSend={text => void chat.sendMessage(text)}
+        isStreaming={chat.isStreaming}
+        onStop={chat.cancelStreaming}
+      />
+    </View>
+  );
+}
+```
+
+`AiMessageList` handles memoized bubbles, stick-to-bottom auto-scroll and the "jump to latest" button. `AiConversationView` adds loading and empty states; `AiChatFooter` is the composer with error line, disclaimer and keyboard lift.
+
+### Sharing a conversation / selective subscriptions
+
+Chat state lives in an `AiChatController` (an external store). Create one, pass it around, and subscribe only to what each component renders:
+
+```tsx
+const controller = useAiChatController(); // no re-renders by itself
+
+function StopButton() {
+  const isStreaming = useAiChatSelector(controller, s => s.isStreaming);
+  return isStreaming ? <Button title="Stop" onPress={controller.cancelStreaming} /> : null;
+}
+
+function Messages() {
+  const { messages } = useAiChatState(controller);
+  return <AiMessageList messages={messages} />;
 }
 ```
 
 ---
 
-## Headless recipe
+## Tool calls & custom renderers
 
-Use the core hook + primitives without any surface entry:
+Tool events from the transport (`onToolStart` / `onToolComplete`) render as tool cards. Arrays of objects become a paginated table, objects a key/value list. Register your own card bodies by **tool name** or by the **`type` field** of the tool's `frontendData`:
 
 ```tsx
-import {
-  AiAssistantProvider,
-  useAiChat,
-  AiMessageBubble,
-  AiChatInput,
-  createMockTransport,
-} from 'expo-ai-assistant';
-import { FlatList, View } from 'react-native';
+import type { AiToolRenderer } from 'expo-ai-assistant';
 
-function HeadlessChat() {
-  const { messages, sendMessage, isStreaming, cancelStreaming, regenerateLastResponse } =
-    useAiChat();
-  const lastAssistantId = [...messages].reverse().find(m => m.role === 'assistant')?.id;
+const WeatherCard: AiToolRenderer = ({ data }) => <Weather {...(data as WeatherData)} />;
 
-  return (
-    <View style={{ flex: 1 }}>
-      <FlatList
-        data={messages}
-        keyExtractor={m => m.id}
-        renderItem={({ item }) => (
-          <AiMessageBubble
-            message={item}
-            showRegenerate={!isStreaming && item.id === lastAssistantId}
-            onRegenerate={() => void regenerateLastResponse()}
-          />
-        )}
-      />
-      <AiChatInput
-        onSend={text => void sendMessage(text)}
-        isStreaming={isStreaming}
-        onStop={cancelStreaming}
-      />
-    </View>
-  );
-}
-
-export default function App() {
-  return (
-    <AiAssistantProvider config={{ transport: createMockTransport() }}>
-      <HeadlessChat />
-    </AiAssistantProvider>
-  );
-}
+<AiAssistantProvider config={config} slots={{ toolRenderers: { getWeather: WeatherCard } }}>
 ```
+
+`slots.renderFunctionCall` replaces the whole card. The OpenAI-compatible default transport is text-only for now — see [docs/DEFERRED.md](./docs/DEFERRED.md).
 
 ---
 
 ## Customization
 
-| Lever       | Prop / API                                               |
-| ----------- | -------------------------------------------------------- |
-| Theme       | `theme`, `colorScheme` on provider                       |
-| Copy / i18n | `strings` on provider (`useAiStrings`)                   |
-| UI slots    | `slots.renderMessage`, `renderInput`, `renderEmpty`, …   |
-| Analytics   | `callbacks.onMessageSent`, `onStreamStart`, `onError`, … |
-| Backend     | `config.transport` or `config.openai`                    |
+| Lever       | API                                                                                                                                          |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Theme       | `theme`, `colorScheme` on the provider                                                                                                       |
+| Copy / i18n | `strings` on the provider (`useAiStrings`)                                                                                                   |
+| UI slots    | `slots.renderMessage`, `renderInput`, `renderEmpty`, `renderFunctionCall`, `renderContentBlocks`, `toolRenderers` — honored by every surface |
+| Callbacks   | `callbacks.onMessageSent`, `onStreamStart`, `onStreamEnd`, `onError`, `onToolComplete`, `onConversationCreated`                              |
+| Backend     | `config.transport` or `config.openai`                                                                                                        |
 
-### Chat UX
+### Theme tokens
 
-- **Stop** / **Regenerate** / **Copy**
-- **Typing indicator** + optional **reasoning** badge
-- **Markdown** via optional `react-native-markdown-display`
+```tsx
+<AiAssistantProvider
+  colorScheme="dark"
+  theme={{
+    colors: {
+      primary: { DEFAULT: '#7C3AED' }, // user bubbles follow primary unless set explicitly
+      bubble: { assistant: '#1E1B4B' },
+      surface: { input: '#111827', code: '#0B0F1A' },
+    },
+    fontFamily: { regular: 'Inter', semibold: 'Inter-SemiBold', mono: 'JetBrainsMono' },
+  }}
+/>
+```
 
----
+Color groups: `bg`, `text`, `border` (`DEFAULT`, `subtle`), `surface` (`raised`, `card`, `input`, `code`, `subtle`, `stripe`, `backdrop`), `bubble` (`user`, `userText`, `assistant`, `assistantText`), `primary`, `error`, `success`, `warning`, `info`.
 
-## Public API (core)
+### Strings
 
-| Export                              | Role                                |
-| ----------------------------------- | ----------------------------------- |
-| `AiAssistantProvider`               | Transport + theme + strings + slots |
-| `createOpenAICompatibleTransport`   | Default public transport factory    |
-| `createMockTransport`               | Offline demo transport              |
-| `useAiChat` / `useAiConversations`  | Chat state                          |
-| `AiChatInput`, `AiMessageBubble`, … | Primitives                          |
-| `useAiTheme` / `useAiStrings`       | Theming & copy                      |
+Every visible label and accessibility label is in `strings`:
+
+```tsx
+<AiAssistantProvider
+  config={config}
+  strings={{
+    inputPlaceholder: 'Mesaj yazın…',
+    tableColumn: index => `Sütun ${index}`,
+    recordCount: count => `${count} kayıt`,
+  }}
+/>
+```
+
+### Performance tips
+
+- Pass stable `slots` / `callbacks` objects (define them outside the component or memoize them) so bubbles are not re-rendered by context changes.
+- Buttons that only open a surface should use `useAiChatModal()` / `useAiQuickAsk()` (controls only).
+- Inline `config={{ openai: {…} }}` is fine — the provider keeps the transport stable and reads the latest options per request.
 
 ---
 
 ## Example
-
-Quick try: [scan the Expo Go QR](#try-in-expo-go) above.
-
-Run locally:
 
 ```bash
 npm install
@@ -261,19 +361,18 @@ npm --prefix example install
 npm run example:go
 ```
 
-Defaults to `createMockTransport()` with **tool / table demos** — try the “Show a table” suggestion or ask for a summary. Toggle **Dark / Light** in the example chrome. Set `EXPO_PUBLIC_OPENAI_API_KEY` for live OpenAI-compatible chat (tool streaming still requires a custom `AiTransport` or MyExamy-style backend).
+The example uses `createMockTransport()` with tool / table demos. Set `EXPO_PUBLIC_OPENAI_API_KEY` to try the OpenAI-compatible transport locally (prototype only — see the warning above).
 
-Republish the hosted Expo Go demo (maintainers):
+## Development
 
 ```bash
-npm run example:publish
+npm run typecheck   # tsc
+npm run lint        # eslint (typescript-eslint + react-hooks)
+npm test            # jest + @testing-library/react-native
+npm run build       # react-native-builder-bob → lib/
 ```
 
-### Tool calling & tables
-
-**UI is included:** `AiFunctionCallCard`, `AiFrontendDataRenderer`, `AiDataTable`, content blocks. Wire them by emitting `onToolStart` / `onToolComplete` from your `AiTransport` (mock transport does this for demo prompts). OpenAI-compatible default transport is text-only for now — see [docs/DEFERRED.md](./docs/DEFERRED.md).
-
----
+Releases use [Changesets](https://github.com/changesets/changesets): add a changeset with `npx changeset`, then `npx changeset version` bumps the version and writes the changelog. Demo-only changes do not need a library release.
 
 ## Docs
 

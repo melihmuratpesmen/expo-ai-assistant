@@ -1,6 +1,57 @@
 # Changelog
 
+## 0.2.0
+
+A structural release: chat state moves into a shared store, every surface renders the same building blocks, and the package ships compiled output. See **Migrating from 0.1** below.
+
+**Breaking changes**
+
+- The package is compiled with react-native-builder-bob: `main` / `types` / `exports` point to `lib/module` (ESM) and `lib/typescript` (declarations). Import only the public entries (`expo-ai-assistant`, `/full-page`, `/floating`, `/modal`, `/bottom-sheet`).
+- Removed deprecated exports: `useAiAssistantConfig` (use `useAiTransport`), `useKeyboardBottomInset` / `chatInputBottomPadding` (use `useScreenBottomKeyboardLift`), `AI_WELCOME_TITLE` / `AI_WELCOME_SUBTITLE` / `AI_DISCLAIMER` (use `strings`), `SHOW_AI_ACTIONS`, `AiFabPolicy`, and the bottom-sheet `AiQuickAskInputOverlay` / `AiQuickAskInputBar` (the composer is the sheet footer).
+- Modal / sheet contexts now hold controls. `useAiChatModalSession()` / `useAiQuickAskSession()` keep returning `{ isActive, open, close, chat }`; the new `useAiChatModal()` / `useAiQuickAsk()` return controls without chat state.
+- `DEFAULT_SUGGESTIONS` are generic prompts; the student-table demo prompts moved to the example. Pass `suggestions` for product-specific ones.
+- `AiFrontendDataRenderer` no longer special-cases `TEST_GENERATED` / `TEST_RESULT` / `TEST_PERFORMANCE_ANALYSIS`; register `slots.toolRenderers` for custom payloads (other objects render as key/value).
+- Theme: `AiThemeColors` gains `surface`, `bubble` and `border.subtle`; `AiThemeFontFamily` gains `mono`. `AiThemeOverride` is unaffected — only code that builds a complete `AiTheme` must add them.
+- `AiMessageBubble` is wrapped in `React.memo`.
+
+**New**
+
+- `AiChatController` (external store) with `useAiChatController`, `useAiChatState`, `useAiChatSelector`, `useAiChatFromController`; `useAiChat()` also returns `controller`
+- Primitives: `AiMessageList`, `AiConversationView`, `AiChatFooter`, `AiComposer`, `AiEmptyState`
+- `slots.toolRenderers` — custom tool-card bodies keyed by tool name or `frontendData.type`
+- Theme tokens `surface.*`, `bubble.*`, `border.subtle`, `fontFamily.mono`; `mergeTheme` export (user bubbles follow an overridden `primary`)
+- `suggestions` prop on `AiChatModalProvider` / `AiQuickAskProvider`; sheet `expandOnSend`; `controller` prop on `AiFloatingChatPanel`
+- `apiKey` is optional in `OpenAICompatibleTransportOptions` for proxy setups; README recipe for an Expo Router API route proxy
+- Strings: `scrollToBottom`, `typing`; exports `toTransportHistory`, `AiFunctionCallStatus` and the new prop / slot types
+
+**Improvements**
+
+- Streamed text is applied once per frame; bubbles are memoized; surfaces subscribe only to the state they render, so opener buttons and headers no longer re-render per token
+- Stick-to-bottom auto-scroll that pauses while the user reads older messages, plus a "jump to latest" button; scrolling reaches the real content end (FlatList's `scrollToEnd` ignored content padding, which hid the end of sheet replies under the footer)
+- `renderInput` / `renderEmpty` slots are honored by every surface (previously only the full page)
+- `open({ initialMessage })` sends immediately on modal, sheet and floating (no timers); closing the floating panel stops the stream; the sheet header stays pinned while scrolling
+- Inline `config={{ openai: {…} }}` no longer recreates the transport each render (which refetched the history list); callbacks and strings are read through refs
+- `useAiConversations` aborts its request on unmount; code blocks use a monospace font
+
+**Fixes**
+
+- Floating overlay: the bubble and FAB sat below the backdrop, so the bubble's send / expand / close buttons closed the bubble instead of acting
+- The typing indicator's accessibility label is localized
+
+**Tooling**
+
+- react-native-builder-bob build, ESLint (typescript-eslint + react-hooks), Prettier, GitHub Actions CI, Changesets
+
+**Migrating from 0.1**
+
+- Buttons that open the modal or sheet: prefer `useAiChatModal()` / `useAiQuickAsk()`.
+- Replace removed deprecated exports as listed above.
+- Custom `TEST_*` cards: `slots={{ toolRenderers: { TEST_RESULT: MyCard } }}`.
+- Relying on the old default suggestions? Pass them explicitly via `suggestions`.
+
 ## 0.1.14
+
+First npm release after 0.1.2; it also contains the unpublished 0.1.3–0.1.13 work (listed below).
 
 **Fixes**
 
@@ -25,56 +76,13 @@
 
 - Jest + Testing Library test suite (`npm test`) with regression tests for the fixes above
 
-## 0.1.13
+**Also included (unpublished 0.1.3–0.1.13)**
 
-- Sheet gestures restored: input is a gorhom footer (no full-screen overlay stealing pans); list and sheet can scroll again
-
-## 0.1.12
-
-- Sheet scrolling restored: FlatList is the sheet’s scrollable child; input overlay no longer covers the message list
-
-## 0.1.11
-
-- Sheet message list owns vertical scrolling (long replies can be panned); sheet closes from the handle / backdrop
-
-## 0.1.10
-
-- Theme reveal no longer flashes at the end (frozen incoming tree + overlay stays full-size until the live theme has painted)
-
-## 0.1.9
-
-- Theme circle expands the new UI from the tap while the rest of the screen stays on the old theme (no black flash outside the wave)
-
-## 0.1.8
-
-- Theme wipe reveals the new UI through the circle (swap first); no more solid black/white fill covering the screen
-
-## 0.1.7
-
-- Demo theme toggle: ReplyZen circular wipe via Reanimated (no Skia snapshot); circle grows from the tap, then the theme swaps
-
-## 0.1.6
-
-- Demo light/dark uses ReplyZen’s circular reveal (tap origin, 700ms easeInOutCubic; color fallback if snapshot fails)
-
-## 0.1.5
-
-- Sheet overlay is mounted only while open, so a closed sheet no longer swallows all app touches
-
-## 0.1.4
-
-- Full-page / modal / sheet: opaque keyboard fill so chat no longer shows through the gap above the keyboard
-- Floating bubble now lifts with the FAB (overlay-relative keyboard math)
-- Sheet Open no longer crashes (no RN Modal, overlay uses regular TextInput, sheet hosted in an absolute fill)
-- Full-page empty state: chips sit just above the composer instead of leaving a large gap
-- Demo light/dark toggle swaps even if the Skia snapshot/animation fails
-
-## 0.1.3
-
-- Keyboard lift matches MyExamy (`useScreenBottomKeyboardLift` + sheet input overlay)
-- Demo: circular Telegram-style light/dark reveal, visible version badge
-- Floating FAB default position uses overlay bounds (not stuck to the bottom)
-- Sheet tables: horizontal scroll via gesture-handler + sheet `failOffsetX`
+- Keyboard lift via `useScreenBottomKeyboardLift` (translateY) with an opaque keyboard fill on full-page, modal and sheet
+- Bottom sheet: composer lives in the gorhom footer, the sheet is mounted only while open, tables scroll horizontally, and list / sheet pans no longer conflict
+- Floating: the input bubble lifts with the FAB; the FAB's default position uses the overlay bounds
+- Full-page empty state: suggestion chips sit just above the composer
+- Example app: circular light/dark reveal, visible library version badge
 
 ## 0.1.2
 

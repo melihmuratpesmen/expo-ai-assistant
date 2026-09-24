@@ -1,10 +1,11 @@
 # Deferred
 
-Intentionally not in `0.1.x`:
+Not in `0.2.x` yet (see the changelog for what shipped):
 
-- Attachment / voice input surfaces
-- Tool-call streaming for OpenAI-compatible default (UI + custom `AiTransport` already support tools/tables; mock transport demos them)
-- Shared cross-surface conversation store
+- OpenAI-compatible tool calling (`tools` + client-side execution) — the UI, custom `AiTransport`s and the mock transport already support tool cards and tables
+- Local persistence adapter (AsyncStorage / MMKV) so history works without a backend
+- Sharing one conversation between surfaces by id (a shared `AiChatController` can already be passed around manually)
+- Generic SSE transport and adapters for other streaming protocols
+- Message interactions: retry on error, edit & resend, feedback, follow-up suggestion chips
+- Attachment / voice input
 - Floating FAB position persistence
-- Publishing automation / CI
-- React Query adapters

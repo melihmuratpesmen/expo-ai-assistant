@@ -6,7 +6,9 @@ Offline by default via `createMockTransport()` — no API key required.
 
 Try **“Show a table”** / **“summary”** suggestions to see tool cards + `AiDataTable`. Use the **Dark / Light** toggle in the chrome.
 
-The header shows **v0.1.13** (library `package.json`). If Expo Go still shows an older number, force-quit and scan the QR again.
+The header shows the **library** version (from the root `package.json`). If Expo Go still shows an older number, force-quit and scan the QR again.
+
+The example has its own version (`example/package.json`, `app.json`). Demo-only changes are published as an EAS Update and do not need a library release.
 
 ## Try without cloning
 
@@ -80,8 +82,9 @@ Publishes an EAS Update on channel `preview` (runtime `exposdk:54.0.0`). The REA
 ## Dev notes
 
 - Linked via `"expo-ai-assistant": "file:.."`
-- Metro watches `../src`
+- Metro resolves the library's TypeScript source through the `expo-ai-assistant-source` exports condition (see `metro.config.js`), so no `npm run build` is needed while developing
 - Library edits hot-reload in local Expo Go
+- `EXPO_PUBLIC_OPENAI_API_KEY` is inlined into the bundle — fine for local testing, never for a published build
 
 ## Troubleshooting
 
