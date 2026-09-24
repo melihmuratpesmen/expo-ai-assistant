@@ -27,9 +27,7 @@ export function useAiKeyboardLift(
 ) {
   const keyboardOpenHeight = useKeyboardOpenHeight();
   const screenHeight = useSharedValue(
-    containerHeight && containerHeight > 0
-      ? containerHeight
-      : Dimensions.get('window').height
+    containerHeight && containerHeight > 0 ? containerHeight : Dimensions.get('window').height
   );
 
   useEffect(() => {

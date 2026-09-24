@@ -1,12 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import {
-  Alert,
-  StyleSheet,
-  View,
-  FlatList,
-  ActivityIndicator,
-  Pressable,
-} from 'react-native';
+import { Alert, StyleSheet, View, FlatList, ActivityIndicator, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 

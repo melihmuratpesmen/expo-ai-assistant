@@ -91,7 +91,9 @@ function asAlertVariant(value: unknown): AlertBlock['variant'] {
 }
 
 /** Normalize loose provider block payloads into typed ContentBlock[]. */
-export function normalizeContentBlocks(raw: unknown[] | null | undefined): ContentBlock[] | undefined {
+export function normalizeContentBlocks(
+  raw: unknown[] | null | undefined
+): ContentBlock[] | undefined {
   if (!raw?.length) return undefined;
 
   const blocks: ContentBlock[] = [];

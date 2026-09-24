@@ -121,26 +121,30 @@ export function AiChatScreen({
       onSelectSuggestion: handleSelectSuggestion,
     }) ?? defaultEmpty;
 
-  const inputContent =
-    slots.renderInput?.({
-      onSend: handleSend,
-      disabled: false,
-      isStreaming,
-      onStop: cancelStreaming,
-    }) ?? (
-      <AiChatInput
-        onSend={handleSend}
-        disabled={false}
-        isStreaming={isStreaming}
-        onStop={cancelStreaming}
-      />
-    );
+  const inputContent = slots.renderInput?.({
+    onSend: handleSend,
+    disabled: false,
+    isStreaming,
+    onStop: cancelStreaming,
+  }) ?? (
+    <AiChatInput
+      onSend={handleSend}
+      disabled={false}
+      isStreaming={isStreaming}
+      onStop={cancelStreaming}
+    />
+  );
 
   const lastAssistantId = [...messages].reverse().find(m => m.role === 'assistant')?.id;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.bg.DEFAULT }]}>
-      <View style={[styles.header, { paddingTop: insets.top, borderBottomColor: theme.colors.border.DEFAULT }]}>
+      <View
+        style={[
+          styles.header,
+          { paddingTop: insets.top, borderBottomColor: theme.colors.border.DEFAULT },
+        ]}
+      >
         <View style={styles.headerLeft}>
           {onBackPress ? (
             <Pressable
@@ -200,7 +204,9 @@ export function AiChatScreen({
               ) : (
                 <AiMessageBubble
                   message={item}
-                  showRegenerate={!isStreaming && item.role === 'assistant' && item.id === lastAssistantId}
+                  showRegenerate={
+                    !isStreaming && item.role === 'assistant' && item.id === lastAssistantId
+                  }
                   onRegenerate={() => {
                     void regenerateLastResponse();
                     scrollToEnd();
@@ -221,12 +227,7 @@ export function AiChatScreen({
         <AiText style={[styles.error, { color: theme.colors.error.DEFAULT }]}>{error}</AiText>
       ) : null}
 
-      <Animated.View
-        style={[
-          { backgroundColor: theme.colors.bg.DEFAULT },
-          keyboardLiftStyle,
-        ]}
-      >
+      <Animated.View style={[{ backgroundColor: theme.colors.bg.DEFAULT }, keyboardLiftStyle]}>
         <View
           style={[
             styles.inputFooter,

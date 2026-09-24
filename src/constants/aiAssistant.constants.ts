@@ -1,11 +1,7 @@
 /**
  * Shared UI copy defaults. Prefer `strings` on AiAssistantProvider for overrides.
  */
-export {
-  defaultStrings,
-  type AiStrings,
-  type AiStringsOverride,
-} from '../i18n/strings';
+export { defaultStrings, type AiStrings, type AiStringsOverride } from '../i18n/strings';
 
 export const SHOW_AI_ACTIONS = false;
 

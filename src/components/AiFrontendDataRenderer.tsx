@@ -24,10 +24,9 @@ function TypedObjectSummary({ data }: { data: Record<string, unknown> }) {
   const lines = useMemo(() => {
     if (type === 'TEST_GENERATED') {
       const count = typeof data.questionCount === 'number' ? data.questionCount : null;
-      return [
-        'Test ready',
-        count != null ? `${count} questions` : null,
-      ].filter(Boolean) as string[];
+      return ['Test ready', count != null ? `${count} questions` : null].filter(
+        Boolean
+      ) as string[];
     }
 
     if (type === 'TEST_RESULT' && isPlainRecord(data.result)) {
@@ -36,9 +35,7 @@ function TypedObjectSummary({ data }: { data: Record<string, unknown> }) {
         'Test result',
         typeof result.correctCount === 'number' ? `Correct: ${result.correctCount}` : null,
         typeof result.wrongCount === 'number' ? `Wrong: ${result.wrongCount}` : null,
-        typeof result.unansweredCount === 'number'
-          ? `Unanswered: ${result.unansweredCount}`
-          : null,
+        typeof result.unansweredCount === 'number' ? `Unanswered: ${result.unansweredCount}` : null,
       ].filter(Boolean) as string[];
     }
 
@@ -77,9 +74,7 @@ function TypedObjectSummary({ data }: { data: Record<string, unknown> }) {
 function AiKeyValueList({ data }: { data: Record<string, unknown> }) {
   const theme = useAiTheme();
   const strings = useAiStrings();
-  const entries = Object.entries(data).filter(
-    ([, value]) => value !== null && value !== undefined
-  );
+  const entries = Object.entries(data).filter(([, value]) => value !== null && value !== undefined);
 
   if (entries.length === 0) return null;
 
@@ -94,10 +89,7 @@ function AiKeyValueList({ data }: { data: Record<string, unknown> }) {
           >
             {formatColumnLabel(key)}
           </AiText>
-          <AiText
-            variant="caption"
-            style={[styles.kvValue, { color: theme.colors.text.DEFAULT }]}
-          >
+          <AiText variant="caption" style={[styles.kvValue, { color: theme.colors.text.DEFAULT }]}>
             {formatCellValue(value, key, strings)}
           </AiText>
         </View>

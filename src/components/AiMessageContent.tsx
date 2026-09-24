@@ -35,8 +35,7 @@ function TextBlockView({ block }: { block: TextBlock }) {
 
 function HeadingBlockView({ block }: { block: HeadingBlock }) {
   const theme = useAiTheme();
-  const size =
-    block.level <= 2 ? fontSize.base : block.level <= 4 ? fontSize.sm : fontSize.xs;
+  const size = block.level <= 2 ? fontSize.base : block.level <= 4 ? fontSize.sm : fontSize.xs;
   return (
     <AiText
       variant="body"
@@ -56,9 +55,7 @@ function HeadingBlockView({ block }: { block: HeadingBlock }) {
 
 function DividerBlockView() {
   const theme = useAiTheme();
-  return (
-    <View style={[styles.divider, { backgroundColor: theme.colors.border.DEFAULT }]} />
-  );
+  return <View style={[styles.divider, { backgroundColor: theme.colors.border.DEFAULT }]} />;
 }
 
 function BlockquoteBlockView({ block }: { block: BlockquoteBlock }) {
@@ -73,10 +70,7 @@ function BlockquoteBlockView({ block }: { block: BlockquoteBlock }) {
         },
       ]}
     >
-      <AiText
-        variant="caption"
-        style={[styles.blockquoteText, { color: theme.colors.text[500] }]}
-      >
+      <AiText variant="caption" style={[styles.blockquoteText, { color: theme.colors.text[500] }]}>
         {stripSimpleMarkdown(block.content)}
       </AiText>
     </View>
@@ -96,10 +90,7 @@ function ListBlockView({ block }: { block: ListBlock }) {
           >
             {block.ordered ? `${index + 1}.` : '•'}
           </AiText>
-          <AiText
-            variant="body"
-            style={[styles.listText, { color: theme.colors.text.DEFAULT }]}
-          >
+          <AiText variant="body" style={[styles.listText, { color: theme.colors.text.DEFAULT }]}>
             {stripSimpleMarkdown(item)}
           </AiText>
         </View>
@@ -126,10 +117,7 @@ function CodeBlockView({ block }: { block: CodeBlock }) {
           {block.language}
         </AiText>
       )}
-      <AiText
-        variant="caption"
-        style={[styles.codeText, { color: theme.colors.text.DEFAULT }]}
-      >
+      <AiText variant="caption" style={[styles.codeText, { color: theme.colors.text.DEFAULT }]}>
         {block.content}
       </AiText>
     </View>
@@ -160,7 +148,9 @@ function TableBlockView({ block }: { block: TableBlock }) {
         style={styles.horizontalScroll}
       >
         <View style={[styles.table, { borderColor }]}>
-          <View style={[styles.tableRow, { backgroundColor: headerBg, borderBottomColor: borderColor }]}>
+          <View
+            style={[styles.tableRow, { backgroundColor: headerBg, borderBottomColor: borderColor }]}
+          >
             {headers.map((header, i) => (
               <View key={`h-${i}`} style={styles.tableCell}>
                 <AiText
@@ -181,7 +171,9 @@ function TableBlockView({ block }: { block: TableBlock }) {
                 styles.tableRow,
                 { borderBottomColor: borderColor },
                 ri === block.rows.length - 1 && styles.tableLastRow,
-                ri % 2 === 1 && { backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)' },
+                ri % 2 === 1 && {
+                  backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.015)',
+                },
               ]}
             >
               {headers.map((_, ci) => (
@@ -206,19 +198,32 @@ function TableBlockView({ block }: { block: TableBlock }) {
 function AlertBlockView({ block }: { block: AlertBlock }) {
   const theme = useAiTheme();
   const palette = {
-    info: { color: theme.colors.info.DEFAULT, bg: theme.colors.info.subtle, icon: 'information-circle-outline' as const },
-    warning: { color: theme.colors.warning.DEFAULT, bg: theme.colors.warning.subtle, icon: 'warning-outline' as const },
-    success: { color: theme.colors.success.DEFAULT, bg: theme.colors.success.subtle, icon: 'checkmark-circle-outline' as const },
-    error: { color: theme.colors.error.DEFAULT, bg: theme.colors.error.subtle, icon: 'alert-circle-outline' as const },
+    info: {
+      color: theme.colors.info.DEFAULT,
+      bg: theme.colors.info.subtle,
+      icon: 'information-circle-outline' as const,
+    },
+    warning: {
+      color: theme.colors.warning.DEFAULT,
+      bg: theme.colors.warning.subtle,
+      icon: 'warning-outline' as const,
+    },
+    success: {
+      color: theme.colors.success.DEFAULT,
+      bg: theme.colors.success.subtle,
+      icon: 'checkmark-circle-outline' as const,
+    },
+    error: {
+      color: theme.colors.error.DEFAULT,
+      bg: theme.colors.error.subtle,
+      icon: 'alert-circle-outline' as const,
+    },
   }[block.variant];
 
   return (
     <View style={[styles.alert, { backgroundColor: palette.bg, borderLeftColor: palette.color }]}>
       <Ionicons name={palette.icon} size={16} color={palette.color} />
-      <AiText
-        variant="caption"
-        style={[styles.alertText, { color: theme.colors.text.DEFAULT }]}
-      >
+      <AiText variant="caption" style={[styles.alertText, { color: theme.colors.text.DEFAULT }]}>
         {stripSimpleMarkdown(block.content)}
       </AiText>
     </View>
@@ -332,10 +337,7 @@ export const AiMessageContent: React.FC<AiMessageContentProps> = ({ blocks, trai
       })}
 
       {!!trailingText?.trim() && (
-        <AiText
-          variant="body"
-          style={[styles.bodyText, { color: theme.colors.text.DEFAULT }]}
-        >
+        <AiText variant="body" style={[styles.bodyText, { color: theme.colors.text.DEFAULT }]}>
           {stripSimpleMarkdown(trailingText)}
         </AiText>
       )}

@@ -80,7 +80,9 @@ describe('createOpenAICompatibleTransport', () => {
 
     FakeXhr.latest().finish(
       401,
-      JSON.stringify({ error: { message: 'Incorrect API key provided.', type: 'invalid_request_error' } })
+      JSON.stringify({
+        error: { message: 'Incorrect API key provided.', type: 'invalid_request_error' },
+      })
     );
 
     const error = await pending.catch(e => e);

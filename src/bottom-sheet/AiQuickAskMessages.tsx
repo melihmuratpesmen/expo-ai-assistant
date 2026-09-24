@@ -45,11 +45,19 @@ export const AiQuickAskMessages: React.FC<AiQuickAskMessagesProps> = ({
     requestAnimationFrame(() => listRef.current?.scrollToEnd({ animated: true }));
   }, []);
 
-  const handleScroll = useCallback((event: { nativeEvent: { contentOffset: { y: number }; contentSize: { height: number }; layoutMeasurement: { height: number } } }) => {
-    const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
-    nearBottomRef.current =
-      contentOffset.y + layoutMeasurement.height >= contentSize.height - 96;
-  }, []);
+  const handleScroll = useCallback(
+    (event: {
+      nativeEvent: {
+        contentOffset: { y: number };
+        contentSize: { height: number };
+        layoutMeasurement: { height: number };
+      };
+    }) => {
+      const { contentOffset, contentSize, layoutMeasurement } = event.nativeEvent;
+      nearBottomRef.current = contentOffset.y + layoutMeasurement.height >= contentSize.height - 96;
+    },
+    []
+  );
 
   useEffect(() => {
     const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
@@ -72,10 +80,7 @@ export const AiQuickAskMessages: React.FC<AiQuickAskMessagesProps> = ({
       <View>
         {messages.length === 0 && !isStreaming ? (
           <View style={styles.suggestionsWrap}>
-            <AiSuggestionGrid
-              suggestions={suggestions.slice(0, 4)}
-              onSelect={handleSuggestion}
-            />
+            <AiSuggestionGrid suggestions={suggestions.slice(0, 4)} onSelect={handleSuggestion} />
           </View>
         ) : null}
         {error ? (

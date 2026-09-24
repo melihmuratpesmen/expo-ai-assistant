@@ -154,7 +154,9 @@ export function AiFloatingChatPanel({
         renderItem={({ item }) => (
           <AiMessageBubble
             message={item}
-            showRegenerate={!isStreaming && item.role === 'assistant' && item.id === lastAssistantId}
+            showRegenerate={
+              !isStreaming && item.role === 'assistant' && item.id === lastAssistantId
+            }
             onRegenerate={() => {
               void regenerateLastResponse();
               scrollToEnd();

@@ -50,12 +50,12 @@ Local playground: [example/README.md](./example/README.md).
 
 ## Surfaces
 
-| Entry | Import | Optional peer |
-|-------|--------|----------------|
-| Core | `expo-ai-assistant` | — |
-| Full page | `expo-ai-assistant/full-page` | — |
-| Floating | `expo-ai-assistant/floating` | — |
-| Modal | `expo-ai-assistant/modal` | — |
+| Entry        | Import                           | Optional peer          |
+| ------------ | -------------------------------- | ---------------------- |
+| Core         | `expo-ai-assistant`              | —                      |
+| Full page    | `expo-ai-assistant/full-page`    | —                      |
+| Floating     | `expo-ai-assistant/floating`     | —                      |
+| Modal        | `expo-ai-assistant/modal`        | —                      |
 | Bottom sheet | `expo-ai-assistant/bottom-sheet` | `@gorhom/bottom-sheet` |
 
 See [docs/SURFACES.md](./docs/SURFACES.md).
@@ -84,17 +84,17 @@ npx expo install @gorhom/bottom-sheet
 
 ### Peer dependencies
 
-| Package | Required |
-|---------|----------|
-| `react`, `react-native` | Yes |
-| `react-native-gesture-handler` | Yes |
-| `react-native-reanimated` | Yes |
+| Package                            | Required                                      |
+| ---------------------------------- | --------------------------------------------- |
+| `react`, `react-native`            | Yes                                           |
+| `react-native-gesture-handler`     | Yes                                           |
+| `react-native-reanimated`          | Yes                                           |
 | `react-native-keyboard-controller` | Yes — keyboard lift (same pattern as MyExamy) |
-| `react-native-safe-area-context` | Yes |
-| `@expo/vector-icons` | Yes |
-| `@gorhom/bottom-sheet` | Optional — only for `./bottom-sheet` |
-| `expo-clipboard` | Optional — nicer copy action |
-| `react-native-markdown-display` | Optional — markdown rendering |
+| `react-native-safe-area-context`   | Yes                                           |
+| `@expo/vector-icons`               | Yes                                           |
+| `@gorhom/bottom-sheet`             | Optional — only for `./bottom-sheet`          |
+| `expo-clipboard`                   | Optional — nicer copy action                  |
+| `react-native-markdown-display`    | Optional — markdown rendering                 |
 
 ---
 
@@ -134,9 +134,7 @@ const transport: AiTransport = {
   },
 };
 
-<AiAssistantProvider config={{ transport /* or createMockTransport() */ }}>
-  …
-</AiAssistantProvider>
+<AiAssistantProvider config={{ transport /* or createMockTransport() */ }}>…</AiAssistantProvider>;
 ```
 
 ### Modal (no gorhom)
@@ -151,7 +149,7 @@ function OpenButton() {
 
 <AiChatModalProvider presentation="card" /* or "fullscreen" */>
   <OpenButton />
-</AiChatModalProvider>
+</AiChatModalProvider>;
 ```
 
 ### Floating → sheet / modal (host composition)
@@ -162,7 +160,7 @@ import { useAiChatModalSession } from 'expo-ai-assistant/modal';
 
 function Bridge() {
   const { open } = useAiChatModalSession();
-  return <AiFloatingOverlay onExpand={(draft) => open({ initialMessage: draft })} />;
+  return <AiFloatingOverlay onExpand={draft => open({ initialMessage: draft })} />;
 }
 ```
 
@@ -222,13 +220,13 @@ export default function App() {
 
 ## Customization
 
-| Lever | Prop / API |
-|-------|------------|
-| Theme | `theme`, `colorScheme` on provider |
-| Copy / i18n | `strings` on provider (`useAiStrings`) |
-| UI slots | `slots.renderMessage`, `renderInput`, `renderEmpty`, … |
-| Analytics | `callbacks.onMessageSent`, `onStreamStart`, `onError`, … |
-| Backend | `config.transport` or `config.openai` |
+| Lever       | Prop / API                                               |
+| ----------- | -------------------------------------------------------- |
+| Theme       | `theme`, `colorScheme` on provider                       |
+| Copy / i18n | `strings` on provider (`useAiStrings`)                   |
+| UI slots    | `slots.renderMessage`, `renderInput`, `renderEmpty`, …   |
+| Analytics   | `callbacks.onMessageSent`, `onStreamStart`, `onError`, … |
+| Backend     | `config.transport` or `config.openai`                    |
 
 ### Chat UX
 
@@ -240,14 +238,14 @@ export default function App() {
 
 ## Public API (core)
 
-| Export | Role |
-|--------|------|
-| `AiAssistantProvider` | Transport + theme + strings + slots |
-| `createOpenAICompatibleTransport` | Default public transport factory |
-| `createMockTransport` | Offline demo transport |
-| `useAiChat` / `useAiConversations` | Chat state |
-| `AiChatInput`, `AiMessageBubble`, … | Primitives |
-| `useAiTheme` / `useAiStrings` | Theming & copy |
+| Export                              | Role                                |
+| ----------------------------------- | ----------------------------------- |
+| `AiAssistantProvider`               | Transport + theme + strings + slots |
+| `createOpenAICompatibleTransport`   | Default public transport factory    |
+| `createMockTransport`               | Offline demo transport              |
+| `useAiChat` / `useAiConversations`  | Chat state                          |
+| `AiChatInput`, `AiMessageBubble`, … | Primitives                          |
+| `useAiTheme` / `useAiStrings`       | Theming & copy                      |
 
 ---
 

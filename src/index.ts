@@ -1,4 +1,8 @@
-export { AiAssistantProvider, useAiTransport, useAiAssistantConfig } from './provider/AiAssistantProvider';
+export {
+  AiAssistantProvider,
+  useAiTransport,
+  useAiAssistantConfig,
+} from './provider/AiAssistantProvider';
 export type { AiAssistantConfig, AiAssistantProviderProps } from './provider/types';
 export type { AiAssistantCallbacks, AiRenderSlots } from './provider/slots';
 export { useAiCallbacks, useAiSlots } from './provider/slots';
@@ -7,10 +11,7 @@ export { useAiChat } from './hooks/useAiChat';
 export type { UseAiChatOptions, UseAiChatResult } from './hooks/useAiChat';
 export { useAiConversations } from './hooks/useAiConversations';
 export { useScreenBottomKeyboardLift } from './hooks/useScreenBottomKeyboardLift';
-export {
-  useKeyboardBottomInset,
-  chatInputBottomPadding,
-} from './hooks/useKeyboardBottomInset';
+export { useKeyboardBottomInset, chatInputBottomPadding } from './hooks/useKeyboardBottomInset';
 
 export {
   createOpenAICompatibleTransport,

@@ -77,7 +77,12 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
         style={styles.horizontalScroll}
       >
         <View style={[styles.table, { borderColor }]}>
-          <View style={[styles.headerRow, { backgroundColor: headerBg, borderBottomColor: borderColor }]}>
+          <View
+            style={[
+              styles.headerRow,
+              { backgroundColor: headerBg, borderBottomColor: borderColor },
+            ]}
+          >
             {columns.map(col => (
               <View key={col.key} style={styles.cell}>
                 <AiText

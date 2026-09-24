@@ -15,10 +15,7 @@ import { useAiStrings } from '../i18n/AiStringsContext';
 import { spacing, fontSize } from '../theme/tokens';
 import { AiText } from '../components/AiText';
 import { AiQuickAskContext, type AiQuickAskContextValue } from './aiQuickAskContext';
-import {
-  AiQuickAskMessages,
-  AiBottomSheetChatInput,
-} from './AiQuickAskMessages';
+import { AiQuickAskMessages, AiBottomSheetChatInput } from './AiQuickAskMessages';
 
 export interface AiQuickAskProviderProps {
   children: ReactNode;

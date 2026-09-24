@@ -1,4 +1,10 @@
-export type { AiTransport, AiTransportStreamHandlers, AiTransportStreamParams, AiTransportStreamResult, AiTransportHistoryResult } from './types';
+export type {
+  AiTransport,
+  AiTransportStreamHandlers,
+  AiTransportStreamParams,
+  AiTransportStreamResult,
+  AiTransportHistoryResult,
+} from './types';
 export { createOpenAICompatibleTransport } from './openaiCompatible';
 export type { OpenAICompatibleTransportOptions } from './openaiCompatible';
 export { createMockTransport } from './createMockTransport';

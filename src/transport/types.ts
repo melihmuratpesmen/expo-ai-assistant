@@ -9,11 +9,7 @@ export interface AiTransportStreamHandlers {
   onToolStart?: (tool: Pick<AiFunctionCall, 'id' | 'name' | 'label' | 'reasoning'>) => void;
   onToolComplete?: (tool: Pick<AiFunctionCall, 'id' | 'name' | 'frontendData'>) => void;
   onError?: (message: string) => void;
-  onDone?: (result: {
-    text: string;
-    messageId?: string;
-    conversationId?: string;
-  }) => void;
+  onDone?: (result: { text: string; messageId?: string; conversationId?: string }) => void;
 }
 
 export interface AiTransportStreamParams {
@@ -49,10 +45,7 @@ export interface AiTransport {
   listSessions?: (signal?: AbortSignal) => Promise<AiConversationSummary[]>;
 
   /** Optional history loader for a session. */
-  getHistory?: (
-    sessionId: string,
-    signal?: AbortSignal
-  ) => Promise<AiTransportHistoryResult>;
+  getHistory?: (sessionId: string, signal?: AbortSignal) => Promise<AiTransportHistoryResult>;
 
   /** Optional session delete. */
   deleteSession?: (sessionId: string, signal?: AbortSignal) => Promise<void>;

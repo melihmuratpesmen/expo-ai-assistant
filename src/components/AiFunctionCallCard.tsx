@@ -59,8 +59,7 @@ export const AiFunctionCallCard: React.FC<AiFunctionCallCardProps> = ({ function
     theme.colors.success.DEFAULT,
   ]);
 
-  const hasData =
-    status === 'completed' && frontendData !== undefined && frontendData !== null;
+  const hasData = status === 'completed' && frontendData !== undefined && frontendData !== null;
 
   const borderColor = isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)';
   const cardBg = isDark ? 'rgba(255,255,255,0.04)' : '#FFFFFF';
@@ -98,10 +97,7 @@ export const AiFunctionCallCard: React.FC<AiFunctionCallCardProps> = ({ function
             ) : (
               <Ionicons name={statusVisual.icon} size={14} color={statusVisual.color} />
             )}
-            <AiText
-              variant="caption"
-              style={[styles.statusLabel, { color: statusVisual.color }]}
-            >
+            <AiText variant="caption" style={[styles.statusLabel, { color: statusVisual.color }]}>
               {statusVisual.label}
             </AiText>
           </View>

@@ -50,11 +50,7 @@ export function AiFloatingOverlay({
     anchorY.value = buttonAnchor.y;
   }, [anchorY, buttonAnchor.y]);
 
-  const clusterLiftStyle = useAiKeyboardLift(
-    anchorY,
-    bubbleVisible,
-    overlayLayout?.height ?? null
-  );
+  const clusterLiftStyle = useAiKeyboardLift(anchorY, bubbleVisible, overlayLayout?.height ?? null);
 
   const handleOverlayLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;

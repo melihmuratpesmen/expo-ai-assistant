@@ -23,9 +23,7 @@ export function toTransportHistory(messages: AiChatMessage[]): AiChatMessage[] {
   return messages.filter(message => {
     if (message.role !== 'assistant') return true;
     if (message.status === 'streaming') return false;
-    return (
-      !!message.content.trim() || !!message.blocks?.length || !!message.functionCalls?.length
-    );
+    return !!message.content.trim() || !!message.blocks?.length || !!message.functionCalls?.length;
   });
 }
 
@@ -70,15 +68,12 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatResult {
   /** Bumped whenever the conversation is replaced; late results from older streams are ignored. */
   const epochRef = useRef(0);
 
-  const updateMessages = useCallback(
-    (updater: (prev: AiChatMessage[]) => AiChatMessage[]) => {
-      const next = updater(messagesRef.current);
-      if (next === messagesRef.current) return;
-      messagesRef.current = next;
-      setMessagesState(next);
-    },
-    []
-  );
+  const updateMessages = useCallback((updater: (prev: AiChatMessage[]) => AiChatMessage[]) => {
+    const next = updater(messagesRef.current);
+    if (next === messagesRef.current) return;
+    messagesRef.current = next;
+    setMessagesState(next);
+  }, []);
 
   const patchMessage = useCallback(
     (id: string, patch: Partial<AiChatMessage>) => {
@@ -303,7 +298,15 @@ export function useAiChat(options: UseAiChatOptions = {}): UseAiChatResult {
         callbacksRef.current.onStreamEnd?.(conversationIdRef.current);
       }
     },
-    [callbacksRef, patchMessage, setConversationId, setStreaming, stringsRef, transport, updateMessages]
+    [
+      callbacksRef,
+      patchMessage,
+      setConversationId,
+      setStreaming,
+      stringsRef,
+      transport,
+      updateMessages,
+    ]
   );
 
   const sendMessage = useCallback(

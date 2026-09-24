@@ -35,10 +35,10 @@ No `@gorhom/bottom-sheet` import. Can be used headless (see README recipe).
 
 ## Dependency isolation
 
-| Import path | Pulls `@gorhom/bottom-sheet`? |
-|-------------|-------------------------------|
-| `expo-ai-assistant` | No |
-| `expo-ai-assistant/full-page` | No |
-| `expo-ai-assistant/floating` | No |
-| `expo-ai-assistant/modal` | No |
-| `expo-ai-assistant/bottom-sheet` | Yes (peer) |
+| Import path                      | Pulls `@gorhom/bottom-sheet`? |
+| -------------------------------- | ----------------------------- |
+| `expo-ai-assistant`              | No                            |
+| `expo-ai-assistant/full-page`    | No                            |
+| `expo-ai-assistant/floating`     | No                            |
+| `expo-ai-assistant/modal`        | No                            |
+| `expo-ai-assistant/bottom-sheet` | Yes (peer)                    |

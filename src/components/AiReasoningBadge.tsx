@@ -12,10 +12,7 @@ export interface AiReasoningBadgeProps {
   defaultExpanded?: boolean;
 }
 
-export function AiReasoningBadge({
-  reasoning,
-  defaultExpanded = false,
-}: AiReasoningBadgeProps) {
+export function AiReasoningBadge({ reasoning, defaultExpanded = false }: AiReasoningBadgeProps) {
   const theme = useAiTheme();
   const strings = useAiStrings();
   const [expanded, setExpanded] = useState(defaultExpanded);

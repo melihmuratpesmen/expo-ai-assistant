@@ -65,10 +65,7 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
               { backgroundColor: theme.colors.primary.DEFAULT },
             ]}
           >
-            <AiText
-              variant="body"
-              style={[styles.text, { color: theme.colors.primary.onPrimary }]}
-            >
+            <AiText variant="body" style={[styles.text, { color: theme.colors.primary.onPrimary }]}>
               {message.content}
             </AiText>
           </View>

@@ -1,12 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react';
-import {
-  StyleSheet,
-  View,
-  FlatList,
-  Keyboard,
-  Platform,
-  Pressable,
-} from 'react-native';
+import { StyleSheet, View, FlatList, Keyboard, Platform, Pressable } from 'react-native';
 import Animated from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -47,14 +40,8 @@ export function AiChatModalBody({
   const keyboardLiftStyle = useScreenBottomKeyboardLift(true);
   const title = titleProp ?? strings.assistantTitle;
   const { chat } = useAiChatModalSession();
-  const {
-    messages,
-    isStreaming,
-    error,
-    sendMessage,
-    regenerateLastResponse,
-    cancelStreaming,
-  } = chat;
+  const { messages, isStreaming, error, sendMessage, regenerateLastResponse, cancelStreaming } =
+    chat;
 
   const listRef = useRef<FlatList<AiChatMessage>>(null);
   const lastAssistantId = [...messages].reverse().find(m => m.role === 'assistant')?.id;
@@ -84,10 +71,7 @@ export function AiChatModalBody({
       <View>
         {messages.length === 0 && !isStreaming ? (
           <View style={styles.suggestionsWrap}>
-            <AiSuggestionGrid
-              suggestions={suggestions.slice(0, 4)}
-              onSelect={handleSuggestion}
-            />
+            <AiSuggestionGrid suggestions={suggestions.slice(0, 4)} onSelect={handleSuggestion} />
           </View>
         ) : null}
         {error ? (
@@ -182,9 +166,7 @@ export function AiChatModalBody({
         }
       />
 
-      <Animated.View
-        style={[{ backgroundColor: theme.colors.bg.DEFAULT }, keyboardLiftStyle]}
-      >
+      <Animated.View style={[{ backgroundColor: theme.colors.bg.DEFAULT }, keyboardLiftStyle]}>
         <View
           style={[
             styles.inputBar,

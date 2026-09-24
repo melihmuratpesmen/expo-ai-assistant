@@ -69,7 +69,5 @@ export function flushAsync() {
 }
 
 export function sse(...payloads: unknown[]): string {
-  return payloads
-    .map(p => `data: ${typeof p === 'string' ? p : JSON.stringify(p)}\n\n`)
-    .join('');
+  return payloads.map(p => `data: ${typeof p === 'string' ? p : JSON.stringify(p)}\n\n`).join('');
 }

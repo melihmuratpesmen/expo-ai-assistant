@@ -110,8 +110,7 @@ export function createOpenAICompatibleTransport(
 
         const choices = Array.isArray(json.choices) ? json.choices : [];
         const first = choices[0] as
-          | { delta?: { content?: string | null }; message?: { content?: string } }
-          | undefined;
+          { delta?: { content?: string | null }; message?: { content?: string } } | undefined;
         const delta = first?.delta?.content ?? first?.message?.content;
         if (typeof delta === 'string' && delta.length > 0) {
           snapshot += delta;

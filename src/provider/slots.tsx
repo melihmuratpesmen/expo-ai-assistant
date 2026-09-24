@@ -39,9 +39,7 @@ export function AiCallbacksProvider({
   children: React.ReactNode;
   value?: AiAssistantCallbacks;
 }) {
-  return (
-    <CallbacksContext.Provider value={value ?? {}}>{children}</CallbacksContext.Provider>
-  );
+  return <CallbacksContext.Provider value={value ?? {}}>{children}</CallbacksContext.Provider>;
 }
 
 export function AiSlotsProvider({
