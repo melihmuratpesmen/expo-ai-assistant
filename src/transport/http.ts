@@ -192,3 +192,73 @@ function parseDataLine(rawLine: string): string | null {
   if (!line.startsWith('data:')) return null;
   return line.slice(5).replace(/^\s/, '');
 }
+
+export interface SseEvent {
+  /** `event:` field; undefined for the default "message" event. */
+  event?: string;
+  /** `data:` lines joined with "\n". */
+  data: string;
+  id?: string;
+}
+
+/**
+ * Spec-compliant SSE parser: fields accumulate until a blank line dispatches
+ * the event; multi-line `data:` fields are joined with newlines.
+ */
+export class SseEventParser {
+  private buffer = '';
+  private dataLines: string[] = [];
+  private eventName: string | undefined;
+  private eventId: string | undefined;
+
+  feed(chunk: string): SseEvent[] {
+    this.buffer += chunk;
+    const events: SseEvent[] = [];
+    let newlineIndex: number;
+    while ((newlineIndex = this.buffer.indexOf('\n')) >= 0) {
+      const rawLine = this.buffer.slice(0, newlineIndex);
+      this.buffer = this.buffer.slice(newlineIndex + 1);
+      const event = this.processLine(rawLine.endsWith('\r') ? rawLine.slice(0, -1) : rawLine);
+      if (event) events.push(event);
+    }
+    return events;
+  }
+
+  /** Dispatch whatever is pending when the stream ends without a trailing blank line. */
+  flush(): SseEvent[] {
+    const events: SseEvent[] = [];
+    if (this.buffer) {
+      const event = this.processLine(this.buffer);
+      this.buffer = '';
+      if (event) events.push(event);
+    }
+    const last = this.dispatch();
+    if (last) events.push(last);
+    return events;
+  }
+
+  private processLine(line: string): SseEvent | null {
+    if (line === '') return this.dispatch();
+    if (line.startsWith(':')) return null;
+    const colon = line.indexOf(':');
+    const field = colon < 0 ? line : line.slice(0, colon);
+    const value = colon < 0 ? '' : line.slice(colon + 1).replace(/^ /, '');
+    if (field === 'data') this.dataLines.push(value);
+    else if (field === 'event') this.eventName = value;
+    else if (field === 'id') this.eventId = value;
+    return null;
+  }
+
+  private dispatch(): SseEvent | null {
+    if (this.dataLines.length === 0) {
+      this.eventName = undefined;
+      return null;
+    }
+    const event: SseEvent = { data: this.dataLines.join('\n') };
+    if (this.eventName) event.event = this.eventName;
+    if (this.eventId !== undefined) event.id = this.eventId;
+    this.dataLines = [];
+    this.eventName = undefined;
+    return event;
+  }
+}

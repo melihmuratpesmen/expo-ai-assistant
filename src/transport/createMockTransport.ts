@@ -8,6 +8,8 @@ export interface MockTransportOptions {
   reply?: (userMessage: string, history: AiChatMessage[]) => string;
   /** Disable built-in tool / table demos. Default false (demos on). */
   disableToolDemos?: boolean;
+  /** Offer follow-up suggestion chips after each reply. Default true. */
+  followUps?: boolean;
 }
 
 const TABLE_TRIGGER = /\b(table|list|students?|rows?|data|tablo|liste|öğrenci)\b/i;
@@ -48,6 +50,7 @@ export function createMockTransport(options: MockTransportOptions = {}): AiTrans
   const tokenDelayMs = options.tokenDelayMs ?? 18;
   const sessions = new Map<string, AiChatMessage[]>();
   const toolDemos = options.disableToolDemos !== true;
+  const followUps = options.followUps !== false;
 
   const replyFor =
     options.reply ??
@@ -162,6 +165,20 @@ export function createMockTransport(options: MockTransportOptions = {}): AiTrans
         }
       );
       sessions.set(conversationId, history);
+
+      if (followUps) {
+        params.handlers.onSuggestions?.(
+          TABLE_TRIGGER.test(userMessage)
+            ? [
+                { id: 'fu-summary', label: 'Summarize it', prompt: 'Give me a short summary.' },
+                { id: 'fu-more', label: 'Tell me more', prompt: 'Tell me more about that.' },
+              ]
+            : [
+                { id: 'fu-table', label: 'Show a table', prompt: 'Show students as a table' },
+                { id: 'fu-more', label: 'Tell me more', prompt: 'Tell me more about that.' },
+              ]
+        );
+      }
 
       params.handlers.onDone?.({ text: snapshot, messageId, conversationId });
       return { text: snapshot, messageId, conversationId };
