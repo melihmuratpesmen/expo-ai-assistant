@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+
 export const spacing = {
   0.5: 2,
   1: 4,
@@ -29,4 +31,5 @@ export const defaultFontFamily = {
   regular: 'System',
   medium: 'System',
   semibold: 'System',
+  mono: Platform.select({ ios: 'Menlo', default: 'monospace' }),
 } as const;

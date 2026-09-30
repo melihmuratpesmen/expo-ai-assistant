@@ -8,22 +8,17 @@ type MarkdownComponent = React.ComponentType<{
   style?: Record<string, StyleProp<TextStyle>>;
 }>;
 
-let Markdown: MarkdownComponent | null = null;
-let markdownResolved = false;
-
 function resolveMarkdown(): MarkdownComponent | null {
-  if (markdownResolved) return Markdown;
-  markdownResolved = true;
   try {
     // Optional peer — only loads when installed by the host app.
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const mod = require('react-native-markdown-display');
-    Markdown = (mod.default ?? mod) as MarkdownComponent;
+    return (mod.default ?? mod) as MarkdownComponent;
   } catch {
-    Markdown = null;
+    return null;
   }
-  return Markdown;
 }
+
+const Markdown = resolveMarkdown();
 
 function stripSimpleMarkdown(text: string): string {
   return text
@@ -43,8 +38,8 @@ export interface AiMarkdownTextProps {
  */
 export function AiMarkdownText({ children, style }: AiMarkdownTextProps) {
   const theme = useAiTheme();
-  const MarkdownView = resolveMarkdown();
 
+  const flatStyle = StyleSheet.flatten(style);
   const markdownStyles = useMemo(
     () => ({
       body: {
@@ -52,17 +47,19 @@ export function AiMarkdownText({ children, style }: AiMarkdownTextProps) {
         fontSize: fontSize.sm,
         lineHeight: 20,
         fontFamily: theme.fontFamily.regular,
+        ...flatStyle,
       },
       strong: { fontFamily: theme.fontFamily.semibold },
       em: { fontStyle: 'italic' as const },
       link: { color: theme.colors.primary.DEFAULT },
       code_inline: {
-        backgroundColor: theme.meta.isDark ? '#111827' : '#F3F4F6',
-        fontFamily: theme.fontFamily.regular,
+        backgroundColor: theme.colors.surface.code,
+        fontFamily: theme.fontFamily.mono,
         fontSize: fontSize.xs,
       },
       fence: {
-        backgroundColor: theme.meta.isDark ? '#111827' : '#F3F4F6',
+        backgroundColor: theme.colors.surface.code,
+        fontFamily: theme.fontFamily.mono,
         borderColor: theme.colors.border.DEFAULT,
         padding: 8,
         borderRadius: 8,
@@ -70,11 +67,11 @@ export function AiMarkdownText({ children, style }: AiMarkdownTextProps) {
       bullet_list: { marginVertical: 4 },
       ordered_list: { marginVertical: 4 },
     }),
-    [theme]
+    [theme, flatStyle]
   );
 
-  if (MarkdownView) {
-    return <MarkdownView style={markdownStyles}>{children}</MarkdownView>;
+  if (Markdown) {
+    return <Markdown style={markdownStyles}>{children}</Markdown>;
   }
 
   return (
@@ -85,7 +82,7 @@ export function AiMarkdownText({ children, style }: AiMarkdownTextProps) {
 }
 
 export function isMarkdownRendererAvailable(): boolean {
-  return resolveMarkdown() != null;
+  return Markdown != null;
 }
 
 const styles = StyleSheet.create({

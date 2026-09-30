@@ -9,6 +9,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { useAiTheme } from '../theme/AiThemeContext';
+import { useAiStrings } from '../i18n/AiStringsContext';
 import { spacing } from '../theme/tokens';
 
 function Dot({ delayMs, color }: { delayMs: number; color: string }) {
@@ -33,10 +34,11 @@ function Dot({ delayMs, color }: { delayMs: number; color: string }) {
 /** Animated "assistant is typing" indicator. */
 export function AiTypingIndicator() {
   const theme = useAiTheme();
+  const strings = useAiStrings();
   const color = theme.colors.text[500];
 
   return (
-    <View style={styles.row} accessibilityLabel="Assistant is typing">
+    <View style={styles.row} accessible accessibilityLabel={strings.typing}>
       <Dot delayMs={0} color={color} />
       <Dot delayMs={140} color={color} />
       <Dot delayMs={280} color={color} />

@@ -32,4 +32,12 @@ export interface AiAssistantProviderProps {
   callbacks?: AiAssistantCallbacks;
   /** Replace built-in UI pieces. */
   slots?: AiRenderSlots;
+  /**
+   * App context sent with every request as `AiTransportStreamParams.context`
+   * (current screen, locale, selected record…). A function is called at send
+   * time, so it can read the latest app state.
+   */
+  context?: AiChatContextValue | (() => AiChatContextValue | undefined);
 }
+
+export type AiChatContextValue = Record<string, unknown>;

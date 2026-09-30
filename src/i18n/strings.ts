@@ -10,6 +10,8 @@ export interface AiStrings {
   emptyHistory: string;
   emptyFloatingPrompt: string;
   preparingReply: string;
+  /** Accessibility label of the typing indicator. */
+  typing: string;
   deleteConversationTitle: string;
   deleteConversationMessage: (title: string) => string;
   cancel: string;
@@ -17,6 +19,8 @@ export interface AiStrings {
   accessibilityAssistant: string;
   accessibilityExpand: string;
   accessibilityClose: string;
+  accessibilityBack: string;
+  newConversation: string;
   errorGeneric: string;
   errorHistory: string;
   errorSessions: string;
@@ -33,6 +37,24 @@ export interface AiStrings {
   copied: string;
   regenerate: string;
   reasoning: string;
+  yes: string;
+  no: string;
+  /** Header used when a table block has no column names. */
+  tableColumn: (index: number) => string;
+  itemCount: (count: number) => string;
+  recordCount: (count: number) => string;
+  previousPage: string;
+  nextPage: string;
+  scrollToBottom: string;
+  retry: string;
+  edit: string;
+  /** Banner above the composer while a message is edited. */
+  editingMessage: string;
+  cancelEdit: string;
+  feedbackGood: string;
+  feedbackBad: string;
+  /** Accessibility label of the follow-up suggestion chips. */
+  followUpSuggestions: string;
 }
 
 export const defaultStrings: AiStrings = {
@@ -47,6 +69,7 @@ export const defaultStrings: AiStrings = {
   emptyHistory: 'No conversations yet.',
   emptyFloatingPrompt: 'Ask a question...',
   preparingReply: 'Preparing a reply...',
+  typing: 'Assistant is typing',
   deleteConversationTitle: 'Delete conversation',
   deleteConversationMessage: title => `Delete “${title}”?`,
   cancel: 'Cancel',
@@ -54,6 +77,8 @@ export const defaultStrings: AiStrings = {
   accessibilityAssistant: 'AI Assistant',
   accessibilityExpand: 'Expand',
   accessibilityClose: 'Close',
+  accessibilityBack: 'Back',
+  newConversation: 'New chat',
   errorGeneric: 'Something went wrong.',
   errorHistory: 'Could not load history.',
   errorSessions: 'Could not load conversations.',
@@ -70,6 +95,21 @@ export const defaultStrings: AiStrings = {
   copied: 'Copied',
   regenerate: 'Regenerate',
   reasoning: 'Thinking',
+  yes: 'Yes',
+  no: 'No',
+  tableColumn: index => `Column ${index}`,
+  itemCount: count => (count === 1 ? '1 item' : `${count} items`),
+  recordCount: count => (count === 1 ? '1 record' : `${count} records`),
+  previousPage: 'Previous page',
+  nextPage: 'Next page',
+  scrollToBottom: 'Scroll to latest message',
+  retry: 'Retry',
+  edit: 'Edit',
+  editingMessage: 'Editing message',
+  cancelEdit: 'Cancel editing',
+  feedbackGood: 'Good response',
+  feedbackBad: 'Bad response',
+  followUpSuggestions: 'Suggested follow-ups',
 };
 
 export type AiStringsOverride = {

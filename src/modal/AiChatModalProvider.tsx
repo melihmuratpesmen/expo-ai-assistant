@@ -1,15 +1,21 @@
-import React, { useCallback, useMemo, useRef, useState, type ReactNode } from 'react';
+import React, { useCallback, useMemo, useState, type ReactNode } from 'react';
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAiChat } from '../hooks/useAiChat';
+import { useAiChatController } from '../hooks/useAiChat';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { spacing, radius } from '../theme/tokens';
 import { AiText } from '../components/AiText';
-import { AiChatModalContext, type AiChatModalContextValue } from './aiChatModalContext';
+import {
+  AiChatModalContext,
+  type AiChatModalControls,
+  type AiChatModalOpenOptions,
+} from './aiChatModalContext';
 import { AiChatModalBody } from './AiChatModalBody';
+import type { AiSuggestion } from '../types/aiContext';
 
 export interface AiChatModalProviderProps {
   children: ReactNode;
@@ -21,6 +27,14 @@ export interface AiChatModalProviderProps {
    * `fullscreen` — edge-to-edge modal.
    */
   presentation?: 'card' | 'fullscreen';
+  /** Empty-state suggestions (defaults to `DEFAULT_SUGGESTIONS`). */
+  suggestions?: AiSuggestion[];
+  /**
+   * Share the conversation with other surfaces using the same id (e.g. an
+   * `AiChatScreen` with `chatId="main"`): opening continues it, closing does not
+   * stop a streaming reply, and "open full page" keeps the stream going.
+   */
+  chatId?: string;
 }
 
 /**
@@ -32,58 +46,42 @@ export function AiChatModalProvider({
   onOpenFullPage,
   title: titleProp,
   presentation = 'card',
+  suggestions,
+  chatId,
 }: AiChatModalProviderProps) {
   const theme = useAiTheme();
   const strings = useAiStrings();
   const insets = useSafeAreaInsets();
   const title = titleProp ?? strings.assistantTitle;
-  const chat = useAiChat();
-  const { sendMessage, startNewConversation, cancelStreaming, conversationId } = chat;
+  const controller = useAiChatController({ chatId });
+  const shared = !!chatId;
   const [isActive, setIsActive] = useState(false);
-  const sentInitialRef = useRef(false);
-
-  const handleClose = useCallback(() => {
-    setIsActive(false);
-    cancelStreaming();
-    sentInitialRef.current = false;
-  }, [cancelStreaming]);
 
   const close = useCallback(() => {
-    handleClose();
-  }, [handleClose]);
+    setIsActive(false);
+    // A shared conversation keeps streaming for the other surfaces.
+    if (!shared) controller.cancelStreaming();
+  }, [controller, shared]);
 
   const continueToFullChat = useCallback(() => {
-    const id = conversationId;
-    handleClose();
-    onOpenFullPage?.(id);
-  }, [conversationId, handleClose, onOpenFullPage]);
+    const { conversationId } = controller.getSnapshot();
+    close();
+    onOpenFullPage?.(conversationId);
+  }, [close, controller, onOpenFullPage]);
 
   const open = useCallback(
-    (options?: { initialMessage?: string }) => {
-      startNewConversation();
-      sentInitialRef.current = false;
+    (options?: AiChatModalOpenOptions) => {
+      if (options?.reset ?? !shared) controller.startNewConversation();
       setIsActive(true);
-
       const initialMessage = options?.initialMessage?.trim();
-      if (initialMessage) {
-        setTimeout(() => {
-          if (sentInitialRef.current) return;
-          sentInitialRef.current = true;
-          void sendMessage(initialMessage);
-        }, 120);
-      }
+      if (initialMessage) void controller.sendMessage(initialMessage);
     },
-    [sendMessage, startNewConversation]
+    [controller, shared]
   );
 
-  const value = useMemo<AiChatModalContextValue>(
-    () => ({
-      isActive,
-      chat,
-      open,
-      close,
-    }),
-    [chat, close, isActive, open]
+  const value = useMemo<AiChatModalControls>(
+    () => ({ isActive, open, close, controller }),
+    [close, controller, isActive, open]
   );
 
   const isFullscreen = presentation === 'fullscreen';
@@ -98,77 +96,94 @@ export function AiChatModalProvider({
         onRequestClose={close}
         statusBarTranslucent
       >
-        <View
-          style={[
-            styles.backdrop,
-            !isFullscreen && { backgroundColor: 'rgba(0,0,0,0.45)' },
-            isFullscreen && { backgroundColor: theme.colors.bg.DEFAULT },
-          ]}
-        >
-          {!isFullscreen ? (
-            <Pressable
-              style={StyleSheet.absoluteFill}
-              onPress={close}
-              accessibilityLabel={strings.accessibilityClose}
-            />
-          ) : null}
-
+        {/* Modal content is a separate native root; gestures (e.g. table scroll) need their own handler root on Android. */}
+        <GestureHandlerRootView style={styles.gestureRoot}>
           <View
             style={[
-              isFullscreen ? styles.fullHost : styles.cardHost,
-              {
-                backgroundColor: theme.colors.bg.DEFAULT,
-                ...(isFullscreen
-                  ? {}
-                  : {
-                      marginTop: insets.top + spacing[4],
-                      marginBottom: Math.max(insets.bottom, spacing[4]),
-                      borderColor: theme.colors.border.DEFAULT,
-                    }),
-              },
+              styles.backdrop,
+              !isFullscreen && { backgroundColor: theme.colors.surface.backdrop },
+              isFullscreen && { backgroundColor: theme.colors.bg.DEFAULT },
             ]}
           >
-            {isFullscreen ? (
-              <AiChatModalBody
-                title={title}
-                onClose={close}
-                onOpenFullPage={onOpenFullPage ? continueToFullChat : undefined}
-                showHeader
+            {!isFullscreen ? (
+              <Pressable
+                style={StyleSheet.absoluteFill}
+                onPress={close}
+                accessibilityLabel={strings.accessibilityClose}
               />
-            ) : (
-              <View style={styles.cardInner}>
-                <View
-                  style={[styles.cardHeader, { borderBottomColor: theme.colors.border.DEFAULT }]}
-                >
-                  <AiText weight="semibold">{title}</AiText>
-                  <View style={styles.headerActions}>
-                    {onOpenFullPage ? (
-                      <Pressable onPress={continueToFullChat} hitSlop={8}>
-                        <Ionicons
-                          name="expand-outline"
-                          size={22}
-                          color={theme.colors.primary.DEFAULT}
-                        />
+            ) : null}
+
+            <View
+              style={[
+                isFullscreen ? styles.fullHost : styles.cardHost,
+                {
+                  backgroundColor: theme.colors.bg.DEFAULT,
+                  ...(isFullscreen
+                    ? {}
+                    : {
+                        marginTop: insets.top + spacing[4],
+                        marginBottom: Math.max(insets.bottom, spacing[4]),
+                        borderColor: theme.colors.border.DEFAULT,
+                      }),
+                },
+              ]}
+            >
+              {isFullscreen ? (
+                <AiChatModalBody
+                  suggestions={suggestions}
+                  title={title}
+                  onClose={close}
+                  onOpenFullPage={onOpenFullPage ? continueToFullChat : undefined}
+                  showHeader
+                />
+              ) : (
+                <View style={styles.cardInner}>
+                  <View
+                    style={[styles.cardHeader, { borderBottomColor: theme.colors.border.DEFAULT }]}
+                  >
+                    <AiText weight="semibold">{title}</AiText>
+                    <View style={styles.headerActions}>
+                      {onOpenFullPage ? (
+                        <Pressable
+                          onPress={continueToFullChat}
+                          hitSlop={8}
+                          accessibilityRole="button"
+                          accessibilityLabel={strings.accessibilityExpand}
+                        >
+                          <Ionicons
+                            name="expand-outline"
+                            size={22}
+                            color={theme.colors.primary.DEFAULT}
+                          />
+                        </Pressable>
+                      ) : null}
+                      <Pressable
+                        onPress={close}
+                        hitSlop={8}
+                        accessibilityRole="button"
+                        accessibilityLabel={strings.accessibilityClose}
+                      >
+                        <Ionicons name="close" size={22} color={theme.colors.text[500]} />
                       </Pressable>
-                    ) : null}
-                    <Pressable onPress={close} hitSlop={8}>
-                      <Ionicons name="close" size={22} color={theme.colors.text[500]} />
-                    </Pressable>
+                    </View>
+                  </View>
+                  <View style={styles.cardBody}>
+                    <AiChatModalBody suggestions={suggestions} onClose={close} showHeader={false} />
                   </View>
                 </View>
-                <View style={styles.cardBody}>
-                  <AiChatModalBody onClose={close} showHeader={false} />
-                </View>
-              </View>
-            )}
+              )}
+            </View>
           </View>
-        </View>
+        </GestureHandlerRootView>
       </Modal>
     </AiChatModalContext.Provider>
   );
 }
 
 const styles = StyleSheet.create({
+  gestureRoot: {
+    flex: 1,
+  },
   backdrop: {
     flex: 1,
     justifyContent: 'center',

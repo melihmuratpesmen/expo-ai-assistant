@@ -12,10 +12,7 @@ export interface AiReasoningBadgeProps {
   defaultExpanded?: boolean;
 }
 
-export function AiReasoningBadge({
-  reasoning,
-  defaultExpanded = false,
-}: AiReasoningBadgeProps) {
+export function AiReasoningBadge({ reasoning, defaultExpanded = false }: AiReasoningBadgeProps) {
   const theme = useAiTheme();
   const strings = useAiStrings();
   const [expanded, setExpanded] = useState(defaultExpanded);
@@ -27,7 +24,7 @@ export function AiReasoningBadge({
       style={[
         styles.wrap,
         {
-          backgroundColor: theme.meta.isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)',
+          backgroundColor: theme.colors.surface.subtle,
           borderColor: theme.colors.border.DEFAULT,
         },
       ]}
@@ -37,6 +34,7 @@ export function AiReasoningBadge({
         style={styles.header}
         accessibilityRole="button"
         accessibilityLabel={strings.reasoning}
+        accessibilityState={{ expanded }}
       >
         <Ionicons name="sparkles-outline" size={14} color={theme.colors.text[500]} />
         <AiText variant="caption" style={{ color: theme.colors.text[500], flex: 1 }}>
