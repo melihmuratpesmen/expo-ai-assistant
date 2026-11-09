@@ -2,6 +2,8 @@
 
 ## 0.3.0
 
+First npm release since 0.1.2. It also ships 0.2.0 and 0.1.14, which were not published on their own. Upgrading from 0.1.x? Read the 0.2.0 **Breaking changes** and **Migrating from 0.1** below.
+
 **New**
 
 - **OpenAI tool calling** — `tools` on `createOpenAICompatibleTransport` run on the device (`execute`, optional `toFrontendData`), show as tool cards and feed results back to the model; `toolChoice`, `maxToolRoundtrips`
@@ -23,6 +25,8 @@
 - `AiConversationView` subscribes to individual state slices, so typing or edit state does not re-render the message list
 
 ## 0.2.0
+
+Not published to npm on its own; ships in 0.3.0.
 
 A structural release: chat state moves into a shared store, every surface renders the same building blocks, and the package ships compiled output. See **Migrating from 0.1** below.
 
@@ -73,7 +77,7 @@ A structural release: chat state moves into a shared store, every surface render
 
 ## 0.1.14
 
-First npm release after 0.1.2; it also contains the unpublished 0.1.3–0.1.13 work (listed below).
+Not published to npm on its own; ships in 0.3.0. It also contains the unpublished 0.1.3–0.1.13 work (listed below).
 
 **Fixes**
 
