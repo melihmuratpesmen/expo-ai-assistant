@@ -22,6 +22,15 @@ export default tseslint.config(
       // Reanimated shared values are written through `.value` inside worklets,
       // which the React Compiler rule reports as mutation of immutable values.
       'react-hooks/immutability': 'off',
+      'no-restricted-properties': [
+        'error',
+        {
+          object: 'StyleSheet',
+          property: 'absoluteFillObject',
+          message:
+            'Removed in React Native 0.88 (spreading it silently drops the layout). Use absoluteFill from src/lib/styles.',
+        },
+      ],
     },
   },
   {
