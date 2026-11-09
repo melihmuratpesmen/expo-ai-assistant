@@ -37,7 +37,6 @@ function resolveColumns(rows: Record<string, unknown>[]): TableColumn[] {
 export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _functionName }) => {
   const theme = useAiTheme();
   const strings = useAiStrings();
-  const { isDark } = theme.meta;
   const [page, setPage] = useState(1);
 
   const columns = useMemo(() => resolveColumns(rows), [rows]);
@@ -46,8 +45,8 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
   const start = (safePage - 1) * AI_DATA_TABLE_PAGE_SIZE;
   const displayRows = rows.slice(start, start + AI_DATA_TABLE_PAGE_SIZE);
 
-  const borderColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-  const headerBg = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)';
+  const borderColor = theme.colors.border.subtle;
+  const headerBg = theme.colors.surface.subtle;
   const muted = theme.colors.text[500];
 
   if (rows.length === 0 || columns.length === 0) {
@@ -63,7 +62,7 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
       <View style={styles.metaRow}>
         <Ionicons name="grid-outline" size={12} color={muted} />
         <AiText variant="caption" style={{ color: muted, marginLeft: 4 }}>
-          {rows.length} records
+          {strings.recordCount(rows.length)}
         </AiText>
       </View>
 
@@ -77,7 +76,12 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
         style={styles.horizontalScroll}
       >
         <View style={[styles.table, { borderColor }]}>
-          <View style={[styles.headerRow, { backgroundColor: headerBg, borderBottomColor: borderColor }]}>
+          <View
+            style={[
+              styles.headerRow,
+              { backgroundColor: headerBg, borderBottomColor: borderColor },
+            ]}
+          >
             {columns.map(col => (
               <View key={col.key} style={styles.cell}>
                 <AiText
@@ -110,7 +114,7 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
                       style={[styles.cellText, { color: theme.colors.text.DEFAULT }]}
                       numberOfLines={2}
                     >
-                      {formatCellValue(row[col.key], col.key)}
+                      {formatCellValue(row[col.key], col.key, strings)}
                     </AiText>
                   </View>
                 ))}
@@ -126,6 +130,9 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
             onPress={() => setPage(p => Math.max(1, p - 1))}
             disabled={safePage <= 1}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={strings.previousPage}
+            accessibilityState={{ disabled: safePage <= 1 }}
             style={[styles.pageBtn, safePage <= 1 && styles.pageBtnDisabled]}
           >
             <Ionicons
@@ -141,6 +148,9 @@ export const AiDataTable: React.FC<AiDataTableProps> = ({ rows, functionName: _f
             onPress={() => setPage(p => Math.min(totalPages, p + 1))}
             disabled={safePage >= totalPages}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={strings.nextPage}
+            accessibilityState={{ disabled: safePage >= totalPages }}
             style={[styles.pageBtn, safePage >= totalPages && styles.pageBtnDisabled]}
           >
             <Ionicons

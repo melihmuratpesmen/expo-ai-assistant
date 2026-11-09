@@ -12,6 +12,16 @@ export interface AiFunctionCall {
   status: AiFunctionCallStatus;
   reasoning?: string;
   frontendData?: unknown;
+  /** Failure message when `status` is `error`. */
+  error?: string;
+}
+
+export type AiMessageFeedback = 'up' | 'down';
+
+export interface AiTokenUsage {
+  promptTokens?: number;
+  completionTokens?: number;
+  totalTokens?: number;
 }
 
 export interface AiActionProposalRaw {
@@ -30,9 +40,14 @@ export interface AiChatMessage {
   status?: AiMessageStatus;
   /** Streaming / provider reasoning text (optional). */
   reasoning?: string;
+  /** Follow-up prompts offered under the reply. */
   suggestions?: AiSuggestion[];
   actions?: AiActionProposalRaw[];
   functionCalls?: AiFunctionCall[];
+  /** The user's rating of an assistant reply. */
+  feedback?: AiMessageFeedback;
+  /** Token usage reported by the transport. */
+  usage?: AiTokenUsage;
 }
 
 export interface AiConversationSummary {
@@ -50,32 +65,3 @@ export interface AiConversation {
   createdAt: number;
   updatedAt: number;
 }
-
-export type ContentBlockDTO = {
-  type: string;
-  content?: string;
-  [key: string]: unknown;
-};
-
-/** Common history role encodings used by some backends. */
-export type HistoryRoleDTO = 'USER' | 'MODEL' | 'user' | 'assistant';
-
-export interface HistoryFunctionCallDTO {
-  id?: string;
-  callId?: string;
-  functionName?: string;
-  functionLabel?: string;
-  reasoning?: string;
-  frontendData?: unknown;
-}
-
-export interface HistoryMessageItemDTO {
-  role: HistoryRoleDTO;
-  content: string | ContentBlockDTO[];
-  timestamp: number;
-  imageUrl?: string | null;
-  functionCalls?: HistoryFunctionCallDTO[] | null;
-}
-
-/** @deprecated Use HistoryRoleDTO */
-export type ChatbotMessageRoleDTO = HistoryRoleDTO;

@@ -13,7 +13,6 @@ interface AiSuggestionGridProps {
 
 export const AiSuggestionGrid: React.FC<AiSuggestionGridProps> = ({ suggestions, onSelect }) => {
   const theme = useAiTheme();
-  const { isDark } = theme.meta;
 
   if (suggestions.length === 0) return null;
 
@@ -23,10 +22,11 @@ export const AiSuggestionGrid: React.FC<AiSuggestionGridProps> = ({ suggestions,
         <Pressable
           key={suggestion.id}
           onPress={() => onSelect(suggestion)}
+          accessibilityRole="button"
           style={[
             styles.card,
             {
-              backgroundColor: isDark ? '#1F2937' : '#FFFFFF',
+              backgroundColor: theme.colors.surface.raised,
               borderColor: theme.colors.border.DEFAULT,
             },
           ]}
@@ -64,7 +64,7 @@ const styles = StyleSheet.create({
   },
   card: {
     width: '47%',
-    flexGrow: 1,
+    flexGrow: 0,
     borderRadius: radius.xl,
     borderWidth: 1,
     padding: spacing[3.5],

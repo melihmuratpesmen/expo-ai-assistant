@@ -1,24 +1,36 @@
 import React, { createContext, useContext, useMemo } from 'react';
 import { darkTheme, lightTheme } from './defaultTheme';
-import type { AiTheme, AiThemeOverride } from './types';
+import type { AiTheme, AiThemeColors, AiThemeOverride } from './types';
 
 const AiThemeContext = createContext<AiTheme>(lightTheme);
 
-function mergeTheme(base: AiTheme, override?: AiThemeOverride): AiTheme {
+export function mergeTheme(base: AiTheme, override?: AiThemeOverride): AiTheme {
   if (!override) return base;
+  const overrideColors = override.colors ?? {};
+
+  const colors = Object.fromEntries(
+    Object.entries(base.colors).map(([group, values]) => [
+      group,
+      { ...values, ...(overrideColors[group as keyof AiThemeColors] as object | undefined) },
+    ])
+  ) as unknown as AiThemeColors;
+
+  // Bubbles follow an overridden primary / text color unless set explicitly.
+  const bubble = overrideColors.bubble ?? {};
+  if (overrideColors.primary?.DEFAULT && !bubble.user) {
+    colors.bubble.user = colors.primary.DEFAULT;
+  }
+  if (overrideColors.primary?.onPrimary && !bubble.userText) {
+    colors.bubble.userText = colors.primary.onPrimary;
+  }
+  if (overrideColors.text?.DEFAULT && !bubble.assistantText) {
+    colors.bubble.assistantText = colors.text.DEFAULT;
+  }
+
   return {
     meta: { ...base.meta, ...override.meta },
     fontFamily: { ...base.fontFamily, ...override.fontFamily },
-    colors: {
-      bg: { ...base.colors.bg, ...override.colors?.bg },
-      text: { ...base.colors.text, ...override.colors?.text },
-      border: { ...base.colors.border, ...override.colors?.border },
-      primary: { ...base.colors.primary, ...override.colors?.primary },
-      error: { ...base.colors.error, ...override.colors?.error },
-      success: { ...base.colors.success, ...override.colors?.success },
-      warning: { ...base.colors.warning, ...override.colors?.warning },
-      info: { ...base.colors.info, ...override.colors?.info },
-    },
+    colors,
   };
 }
 

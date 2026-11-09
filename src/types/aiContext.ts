@@ -9,6 +9,3 @@ export interface AiSuggestion {
   /** Optional Ionicons glyph name. */
   icon?: string;
 }
-
-/** Optional FAB visibility hint for host-driven overlays. */
-export type AiFabPolicy = 'inherit' | 'show' | 'hide';

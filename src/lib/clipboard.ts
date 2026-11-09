@@ -7,7 +7,6 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
   if (!value) return false;
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const ExpoClipboard = require('expo-clipboard') as {
       setStringAsync?: (value: string) => Promise<void>;
     };
@@ -20,7 +19,6 @@ export async function copyTextToClipboard(text: string): Promise<boolean> {
   }
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const rn = require('react-native') as {
       Clipboard?: { setString?: (value: string) => void };
     };

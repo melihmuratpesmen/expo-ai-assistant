@@ -10,12 +10,7 @@ interface AiTextProps extends TextProps {
   weight?: 'regular' | 'medium' | 'semibold';
 }
 
-export function AiText({
-  variant = 'body',
-  weight = 'regular',
-  style,
-  ...rest
-}: AiTextProps) {
+export function AiText({ variant = 'body', weight = 'regular', style, ...rest }: AiTextProps) {
   const theme = useAiTheme();
   const size =
     variant === 'title' ? fontSize.base : variant === 'caption' ? fontSize.xs : fontSize.sm;

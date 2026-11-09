@@ -20,16 +20,30 @@ export function computeAiKeyboardLift(
   return Math.max(0, clusterBottom + AI_KEYBOARD_GAP - visibleBottom);
 }
 
-export function useAiKeyboardLift(anchorY: SharedValue<number>, enabled: boolean) {
+export function useAiKeyboardLift(
+  anchorY: SharedValue<number>,
+  enabled: boolean,
+  containerHeight?: number | null
+) {
   const keyboardOpenHeight = useKeyboardOpenHeight();
-  const screenHeight = useSharedValue(Dimensions.get('window').height);
+  const screenHeight = useSharedValue(
+    containerHeight && containerHeight > 0 ? containerHeight : Dimensions.get('window').height
+  );
 
   useEffect(() => {
+    const apply = (height: number) => {
+      screenHeight.value = height;
+    };
+    if (containerHeight && containerHeight > 0) {
+      apply(containerHeight);
+      return;
+    }
+    apply(Dimensions.get('window').height);
     const subscription = Dimensions.addEventListener('change', ({ window }) => {
-      screenHeight.value = window.height;
+      apply(window.height);
     });
     return () => subscription.remove();
-  }, [screenHeight]);
+  }, [containerHeight, screenHeight]);
 
   return useAnimatedStyle(() => {
     const lift = computeAiKeyboardLift(

@@ -7,8 +7,7 @@ const path = require('path');
 
 const root = path.join(__dirname, '..', 'src');
 const offenders = [];
-const importRe =
-  /(?:from|require\()\s*['"]@gorhom\/bottom-sheet['"]/;
+const importRe = /(?:from|require\()\s*['"]@gorhom\/bottom-sheet['"]/;
 
 function walk(dir) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {

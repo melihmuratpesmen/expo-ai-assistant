@@ -5,7 +5,8 @@ import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiSlots } from '../provider/slots';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { spacing, radius, fontSize } from '../theme/tokens';
-import type { AiChatMessage } from '../types/aiChat';
+import type { AiChatMessage, AiMessageFeedback } from '../types/aiChat';
+import type { AiSuggestion } from '../types/aiContext';
 import { AiFunctionCallCard } from './AiFunctionCallCard';
 import { AiMessageContent } from './AiMessageContent';
 import { AiMarkdownText } from './AiMarkdownText';
@@ -13,12 +14,20 @@ import { AiTypingIndicator } from './AiTypingIndicator';
 import { AiMessageActions } from './AiMessageActions';
 import { AiReasoningBadge } from './AiReasoningBadge';
 import { AiText } from './AiText';
+import { AiFollowUpSuggestions } from './AiFollowUpSuggestions';
 
-interface AiMessageBubbleProps {
+export interface AiMessageBubbleProps {
   message: AiChatMessage;
-  /** Show regenerate control (typically last assistant message). */
+  /** Show regenerate / retry (typically on the latest assistant message). */
   showRegenerate?: boolean;
   onRegenerate?: () => void;
+  /** Shows "Edit" on user messages. */
+  onEdit?: (message: AiChatMessage) => void;
+  /** Shows 👍 / 👎 on assistant messages. */
+  onFeedback?: (message: AiChatMessage, feedback: AiMessageFeedback) => void;
+  /** Render `message.suggestions` as follow-up chips (typically the latest reply only). */
+  showSuggestions?: boolean;
+  onSelectSuggestion?: (suggestion: AiSuggestion) => void;
 }
 
 function computeTrailingText(content: string, hasBlocks: boolean): string | undefined {
@@ -28,15 +37,19 @@ function computeTrailingText(content: string, hasBlocks: boolean): string | unde
   return tail.length > 0 ? tail : undefined;
 }
 
-export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
+function AiMessageBubbleImpl({
   message,
   showRegenerate = false,
   onRegenerate,
-}) => {
+  onEdit,
+  onFeedback,
+  showSuggestions = false,
+  onSelectSuggestion,
+}: AiMessageBubbleProps) {
   const theme = useAiTheme();
   const slots = useAiSlots();
   const strings = useAiStrings();
-  const { isDark } = theme.meta;
+  const { bubble } = theme.colors;
 
   if (slots.renderMessage) {
     return <>{slots.renderMessage(message)}</>;
@@ -47,8 +60,9 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
   const hasBlocks = !!message.blocks?.length;
   const hasText = !!message.content?.trim();
   const hasReasoning = !!message.reasoning?.trim();
-  const showTypingDots =
-    !isUser && message.status === 'streaming' && !hasText && !hasBlocks && !hasFunctionCalls;
+  const isEmpty = !hasText && !hasBlocks && !hasFunctionCalls;
+  const showTypingDots = !isUser && message.status === 'streaming' && isEmpty;
+  const showErrorFallback = !isUser && message.status === 'error' && isEmpty;
   const isWide = hasFunctionCalls || hasBlocks;
   const trailingText =
     message.status === 'streaming' ? computeTrailingText(message.content, hasBlocks) : undefined;
@@ -57,21 +71,12 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
     return (
       <View style={[styles.row, styles.rowUser]}>
         <View style={styles.userColumn}>
-          <View
-            style={[
-              styles.bubble,
-              styles.userBubble,
-              { backgroundColor: theme.colors.primary.DEFAULT },
-            ]}
-          >
-            <AiText
-              variant="body"
-              style={[styles.text, { color: theme.colors.primary.onPrimary }]}
-            >
+          <View style={[styles.bubble, styles.userBubble, { backgroundColor: bubble.user }]}>
+            <AiText variant="body" style={[styles.text, { color: bubble.userText }]}>
               {message.content}
             </AiText>
           </View>
-          <AiMessageActions message={message} />
+          <AiMessageActions message={message} onEdit={onEdit} />
         </View>
       </View>
     );
@@ -90,14 +95,14 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
           />
         ) : null}
 
-        {(hasText || hasBlocks || showTypingDots) && (
+        {(hasText || hasBlocks || showTypingDots || showErrorFallback) && (
           <View
             style={[
               styles.bubble,
               styles.assistantBubble,
               isWide && styles.assistantBubbleWide,
               {
-                backgroundColor: isDark ? '#1F2937' : '#F3F4F6',
+                backgroundColor: bubble.assistant,
                 borderColor:
                   message.status === 'error' ? theme.colors.error.DEFAULT : 'transparent',
                 borderWidth: message.status === 'error' ? 1 : 0,
@@ -106,6 +111,10 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
           >
             {showTypingDots ? (
               <AiTypingIndicator />
+            ) : showErrorFallback ? (
+              <AiText variant="body" style={[styles.text, { color: bubble.assistantText }]}>
+                {strings.errorStream}
+              </AiText>
             ) : hasBlocks ? (
               slots.renderContentBlocks ? (
                 <>{slots.renderContentBlocks(message.blocks!, trailingText)}</>
@@ -113,7 +122,7 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
                 <AiMessageContent blocks={message.blocks!} trailingText={trailingText} />
               )
             ) : (
-              <AiMarkdownText style={[styles.text, { color: theme.colors.text.DEFAULT }]}>
+              <AiMarkdownText style={[styles.text, { color: bubble.assistantText }]}>
                 {message.content}
               </AiMarkdownText>
             )}
@@ -142,11 +151,22 @@ export const AiMessageBubble: React.FC<AiMessageBubbleProps> = ({
           message={message}
           showRegenerate={showRegenerate}
           onRegenerate={onRegenerate}
+          onFeedback={onFeedback}
         />
+
+        {showSuggestions && onSelectSuggestion && message.suggestions?.length ? (
+          <AiFollowUpSuggestions suggestions={message.suggestions} onSelect={onSelectSuggestion} />
+        ) : null}
       </View>
     </View>
   );
-};
+}
+
+/**
+ * One chat message. Memoized: while a reply streams, only the bubble whose
+ * `message` object changed re-renders.
+ */
+export const AiMessageBubble = React.memo(AiMessageBubbleImpl);
 
 const styles = StyleSheet.create({
   row: {

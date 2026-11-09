@@ -1,38 +1,26 @@
+import type { AiSuggestion } from '../types/aiContext';
+
 /**
- * Shared UI copy defaults. Prefer `strings` on AiAssistantProvider for overrides.
+ * Generic starter prompts for empty conversations. Pass your own
+ * `suggestions` to the surfaces for product-specific ones.
  */
-export {
-  defaultStrings,
-  type AiStrings,
-  type AiStringsOverride,
-} from '../i18n/strings';
-
-export const SHOW_AI_ACTIONS = false;
-
-export const DEFAULT_SUGGESTIONS: import('../types/aiContext').AiSuggestion[] = [
+export const DEFAULT_SUGGESTIONS: AiSuggestion[] = [
   {
-    id: 'help-overview',
+    id: 'capabilities',
     label: 'What can you do?',
     prompt: 'What can you help me with?',
     icon: 'sparkles',
   },
   {
-    id: 'help-table',
-    label: 'Show a table',
-    prompt: 'Show students as a table',
-    icon: 'grid-outline',
+    id: 'explain',
+    label: 'Explain simply',
+    prompt: 'Explain a complex topic to me in simple terms.',
+    icon: 'bulb-outline',
   },
   {
-    id: 'help-summary',
-    label: 'Quick summary',
-    prompt: 'Give me a short summary for today.',
+    id: 'brainstorm',
+    label: 'Brainstorm ideas',
+    prompt: 'Help me brainstorm a few ideas.',
     icon: 'list-outline',
   },
 ];
-
-/** @deprecated Use strings.welcomeTitle via useAiStrings() */
-export const AI_WELCOME_TITLE = 'Hello!';
-/** @deprecated Use strings.welcomeSubtitle via useAiStrings() */
-export const AI_WELCOME_SUBTITLE = 'How can I help you today?';
-/** @deprecated Use strings.disclaimer via useAiStrings() */
-export const AI_DISCLAIMER = 'AI can make mistakes. Verify important information.';

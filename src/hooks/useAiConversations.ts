@@ -2,39 +2,62 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAiTransport } from '../provider/AiAssistantProvider';
 import { useAiCallbacks } from '../provider/slots';
 import { useAiStrings } from '../i18n/AiStringsContext';
+import { useLatestRef } from '../lib/useLatestRef';
 import type { AiConversationSummary } from '../types/aiChat';
 
-export function useAiConversations() {
-  const transport = useAiTransport();
-  const callbacks = useAiCallbacks();
-  const strings = useAiStrings();
-  const [conversations, setConversations] = useState<AiConversationSummary[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const supportsSessions = typeof transport.listSessions === 'function';
+export interface UseAiConversationsResult {
+  conversations: AiConversationSummary[];
+  isLoading: boolean;
+  error: string | null;
+  refetch: () => Promise<void>;
+  remove: (sessionId: string) => Promise<void>;
+  /** False when the transport has no `listSessions`. */
+  supportsSessions: boolean;
+}
 
-  const refetch = useCallback(async () => {
-    if (!transport.listSessions) {
-      setConversations([]);
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-    try {
-      const list = await transport.listSessions();
-      setConversations(list);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : strings.errorSessions;
-      setError(message);
-      callbacks.onError?.(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [transport, strings.errorSessions, callbacks]);
+/** Persisted conversation list through `transport.listSessions` / `deleteSession`. */
+export function useAiConversations(): UseAiConversationsResult {
+  const transport = useAiTransport();
+  const callbacksRef = useLatestRef(useAiCallbacks());
+  const stringsRef = useLatestRef(useAiStrings());
+  const supportsSessions = typeof transport.listSessions === 'function';
+  const [conversations, setConversations] = useState<AiConversationSummary[]>([]);
+  const [isLoading, setIsLoading] = useState(supportsSessions);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchSessions = useCallback(
+    (signal?: AbortSignal) => {
+      if (!transport.listSessions) return Promise.resolve();
+      return transport.listSessions(signal).then(
+        list => {
+          if (signal?.aborted) return;
+          setConversations(list);
+          setError(null);
+          setIsLoading(false);
+        },
+        (err: unknown) => {
+          if (signal?.aborted || (err as Error)?.name === 'AbortError') return;
+          const message = err instanceof Error ? err.message : stringsRef.current.errorSessions;
+          setError(message);
+          setIsLoading(false);
+          callbacksRef.current.onError?.(message);
+        }
+      );
+    },
+    [callbacksRef, stringsRef, transport]
+  );
 
   useEffect(() => {
-    void refetch();
-  }, [refetch]);
+    const controller = new AbortController();
+    void fetchSessions(controller.signal);
+    return () => controller.abort();
+  }, [fetchSessions]);
+
+  const refetch = useCallback(async () => {
+    if (!transport.listSessions) return;
+    setIsLoading(true);
+    await fetchSessions();
+  }, [fetchSessions, transport]);
 
   const remove = useCallback(
     async (sessionId: string) => {

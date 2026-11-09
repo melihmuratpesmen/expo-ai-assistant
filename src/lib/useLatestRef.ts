@@ -1,0 +1,13 @@
+import { useLayoutEffect, useRef } from 'react';
+
+/**
+ * Ref that always holds the latest value, so callbacks and effects can read
+ * props (callbacks, strings) without re-subscribing when their identity changes.
+ */
+export function useLatestRef<T>(value: T) {
+  const ref = useRef(value);
+  useLayoutEffect(() => {
+    ref.current = value;
+  });
+  return ref;
+}

@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  library:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test -- --ci
+      - run: npm run verify:gorhom
+      - run: npm run build
+      - name: Package contents
+        run: npm pack --dry-run
+
+  example:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            example/package-lock.json
+      - run: npm ci --ignore-scripts
+      - run: npm ci --prefix example
+      - name: Typecheck example against library source
+        working-directory: example
+        run: npx tsc --noEmit
+      - name: Bundle example (iOS)
+        working-directory: example
+        run: npx expo export --platform ios --output-dir dist
