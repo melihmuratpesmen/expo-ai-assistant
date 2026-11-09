@@ -39,12 +39,13 @@ export function useScreenBottomKeyboardLift(enabled = true, bottomInset?: number
     };
   }, [enabled]);
 
+  // No dependency array: Reanimated re-creates the reaction when `inset` (in the closure)
+  // changes, and Reanimated 4.7+ warns that arrays are ignored on native.
   useAnimatedReaction(
     () => Math.max(-keyboardHeight.value - inset, 0),
     target => {
       if (!IS_ANDROID) keyboardLift.value = target;
-    },
-    [inset]
+    }
   );
 
   useGenericKeyboardHandler(

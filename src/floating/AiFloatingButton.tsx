@@ -206,6 +206,8 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
 
   const keyboardOpenHeight = useKeyboardOpenHeight();
 
+  // No dependency array: Reanimated tracks the worklet's closure (active, liftWithKeyboard)
+  // itself, and Reanimated 4.7+ warns that arrays are ignored on native.
   const animatedStyle = useAnimatedStyle(() => {
     const keyboardLift = computeAiKeyboardLift(
       translateY.value,
@@ -220,7 +222,7 @@ export const AiFloatingButton: React.FC<AiFloatingButtonProps> = ({
         { translateY: translateY.value - keyboardLift },
       ],
     };
-  }, [active, liftWithKeyboard]);
+  });
 
   return (
     <GestureDetector gesture={composedGesture}>
