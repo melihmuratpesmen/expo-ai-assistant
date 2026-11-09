@@ -13,6 +13,7 @@ import {
 import { useAiKeyboardLift } from './useAiKeyboardLift';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { useAiChatController } from '../hooks/useAiChat';
+import { absoluteFill } from '../lib/styles';
 
 export interface AiFloatingOverlayProps {
   /** When false, overlay is hidden (host RBAC / prefs). Default true. */
@@ -142,18 +143,18 @@ export function AiFloatingOverlay({
 
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     zIndex: 55,
     elevation: 55,
   },
   // Above the backdrop (56) so the bubble's buttons and the FAB stay tappable.
   cluster: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     zIndex: 59,
     elevation: 59,
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     zIndex: 56,
     elevation: 56,
   },

@@ -104,7 +104,7 @@ export function useCircularThemeReveal(
 
 const styles = StyleSheet.create({
   host: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     zIndex: 99999,
     elevation: 99999,
   },
