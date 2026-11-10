@@ -60,10 +60,15 @@ npx expo install expo-ai-assistant react-native-gesture-handler react-native-rea
 Optional:
 
 ```bash
-npx expo install @gorhom/bottom-sheet            # bottom-sheet surface
-npx expo install react-native-markdown-display   # markdown rendering
-npx expo install expo-clipboard                   # copy action
+npx expo install @gorhom/bottom-sheet                     # bottom-sheet surface
+npx expo install react-native-markdown-display punycode   # markdown rendering
+npx expo install expo-clipboard                            # copy action
 ```
+
+> [!NOTE]
+> `react-native-markdown-display` depends on `markdown-it@10`, which imports `punycode` without declaring it. Older Expo SDKs happened to install it; on Expo SDK 58 the bundle fails with "Unable to resolve module punycode" unless you add it yourself.
+
+Tested with Expo SDK 54 (React Native 0.81, iOS) and Expo SDK 58 (React Native 0.88, gesture-handler 3, iOS and Android).
 
 **App setup**
 
@@ -80,7 +85,7 @@ npx expo install expo-clipboard                   # copy action
 | `react-native-keyboard-controller`                     | Yes — keyboard-aware composer             |
 | `react-native-safe-area-context`, `@expo/vector-icons` | Yes                                       |
 | `@gorhom/bottom-sheet`                                 | Only for `expo-ai-assistant/bottom-sheet` |
-| `react-native-markdown-display`                        | Optional — markdown in replies            |
+| `react-native-markdown-display` (+ `punycode`)         | Optional — markdown in replies            |
 | `expo-clipboard`                                       | Optional — nicer copy action              |
 
 ---

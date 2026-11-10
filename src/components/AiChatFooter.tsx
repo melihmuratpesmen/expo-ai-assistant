@@ -1,11 +1,11 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useRef } from 'react';
 import { Pressable, StyleSheet, View, type TextInputProps } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import Animated from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import type { AiChatController } from '../core/AiChatController';
 import { useAiChatSelector } from '../hooks/useAiChat';
-import { useScreenBottomKeyboardLift } from '../hooks/useScreenBottomKeyboardLift';
+import { useKeyboardLift } from '../hooks/useScreenBottomKeyboardLift';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { useAiSlots, type AiInputSlotProps } from '../provider/slots';
 import { useAiTheme } from '../theme/AiThemeContext';
@@ -63,9 +63,12 @@ export function AiChatFooter({
   const isStreaming = useAiChatSelector(controller, state => state.isStreaming);
   const error = useAiChatSelector(controller, state => state.error);
   const editing = useAiChatSelector(controller, state => state.editing);
-  const keyboardLiftStyle = useScreenBottomKeyboardLift(
+  // Untransformed wrapper the keyboard fallback measures (the lifted view moves).
+  const anchorRef = useRef<View>(null);
+  const { style: keyboardLiftStyle, onAnchorLayout } = useKeyboardLift(
     liftWithKeyboard,
-    bottomInset && bottomInset > 0 ? bottomInset : undefined
+    bottomInset && bottomInset > 0 ? bottomInset : undefined,
+    anchorRef
   );
 
   const handleSend = useCallback(
@@ -76,7 +79,7 @@ export function AiChatFooter({
     [controller]
   );
 
-  return (
+  const footer = (
     <Animated.View style={[{ backgroundColor: theme.colors.bg.DEFAULT }, keyboardLiftStyle]}>
       <View
         style={[
@@ -142,6 +145,13 @@ export function AiChatFooter({
         />
       ) : null}
     </Animated.View>
+  );
+
+  if (!liftWithKeyboard) return footer;
+  return (
+    <View ref={anchorRef} onLayout={onAnchorLayout} collapsable={false}>
+      {footer}
+    </View>
   );
 }
 

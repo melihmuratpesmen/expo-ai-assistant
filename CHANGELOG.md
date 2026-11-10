@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.3.1
+
+Expo SDK 58 (React Native 0.88) compatibility and Android keyboard fixes.
+
+**Fixes**
+
+- Android: the full-page composer stayed behind the keyboard when react-native-keyboard-controller events do not reach JS (Expo Go, for example). The footer now falls back to React Native's keyboard events and lifts by the measured overlap, which also stays correct in windows that resize for the keyboard (a `Modal`, `adjustResize`)
+- Android: the floating bubble and FAB jumped far above the keyboard and the FAB position reset when the window resized for it; the overlay keeps its full-height layout while the keyboard is open
+
+- Floating: the FAB and input bubble did not render on React Native 0.88. RN 0.88 removed `StyleSheet.absoluteFillObject`, so the overlay, cluster and backdrop lost their full-screen layout; they now use an explicit fill style that works on every version
+- Bottom sheet: the sheet opened (and the conversation ran) but stayed invisible on React Native 0.88 for the same reason
+- No more `[Reanimated] Dependencies should only be used on the web` warnings from the library on Reanimated 4.7+ (dependency arrays removed from `useAnimatedStyle` / `useAnimatedReaction`; Reanimated tracks the closures itself). `@gorhom/bottom-sheet` still logs its own while the sheet is open
+
+**Docs**
+
+- Install `punycode` next to `react-native-markdown-display`: its `markdown-it@10` imports `punycode` without declaring it, and on Expo SDK 58 the bundle fails without it
+- Tested with Expo SDK 54 (iOS) and Expo SDK 58 (iOS and Android)
+
+**Tooling**
+
+- ESLint forbids `StyleSheet.absoluteFillObject` in `src/`
+
 ## 0.3.0
 
 First npm release since 0.1.2. It also ships 0.2.0 and 0.1.14, which were not published on their own. Upgrading from 0.1.x? Read the 0.2.0 **Breaking changes** and **Migrating from 0.1** below.

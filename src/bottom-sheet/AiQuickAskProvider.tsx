@@ -9,6 +9,7 @@ import BottomSheet, {
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAiChatController } from '../hooks/useAiChat';
+import { absoluteFill } from '../lib/styles';
 import { useAiTheme } from '../theme/AiThemeContext';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { spacing } from '../theme/tokens';
@@ -218,7 +219,7 @@ function SheetFooter({ controller }: { controller: AiChatController }) {
 
 const styles = StyleSheet.create({
   sheetHost: {
-    ...StyleSheet.absoluteFillObject,
+    ...absoluteFill,
     zIndex: 9999,
     elevation: 9999,
   },

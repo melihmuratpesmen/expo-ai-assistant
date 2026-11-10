@@ -104,7 +104,13 @@ export function useCircularThemeReveal(
 
 const styles = StyleSheet.create({
   host: {
-    ...StyleSheet.absoluteFillObject,
+    // Explicit fill: StyleSheet.absoluteFillObject is gone in RN 0.88, and absoluteFill
+    // is typed as a registered style (not spreadable) in older RN types.
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
     zIndex: 99999,
     elevation: 99999,
   },

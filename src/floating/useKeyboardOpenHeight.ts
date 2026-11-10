@@ -21,8 +21,7 @@ export function useKeyboardOpenHeight() {
       if (Platform.OS === 'ios') {
         keyboardOpenHeight.value = value;
       }
-    },
-    []
+    }
   );
 
   useGenericKeyboardHandler(
