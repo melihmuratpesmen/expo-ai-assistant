@@ -68,7 +68,7 @@ npx expo install expo-clipboard                            # copy action
 > [!NOTE]
 > `react-native-markdown-display` depends on `markdown-it@10`, which imports `punycode` without declaring it. Older Expo SDKs happened to install it; on Expo SDK 58 the bundle fails with "Unable to resolve module punycode" unless you add it yourself.
 
-Tested with Expo SDK 54 (React Native 0.81) and Expo SDK 58 (React Native 0.88, gesture-handler 3).
+Tested with Expo SDK 54 (React Native 0.81, iOS) and Expo SDK 58 (React Native 0.88, gesture-handler 3, iOS and Android).
 
 **App setup**
 
