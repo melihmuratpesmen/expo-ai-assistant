@@ -61,6 +61,25 @@ export function clampAiButtonPosition(
   };
 }
 
+/**
+ * True when a new overlay layout only differs by being shorter while the keyboard is open:
+ * Android shrinks the window for the keyboard (adjustResize), and the floating cluster
+ * already lifts itself by the keyboard height.
+ */
+export function isKeyboardShrink(
+  previous: AiOverlayLayout | null | undefined,
+  next: AiOverlayLayout | null | undefined,
+  keyboardShown: boolean
+): boolean {
+  return (
+    keyboardShown &&
+    !!previous &&
+    !!next &&
+    previous.width === next.width &&
+    next.height < previous.height
+  );
+}
+
 /** Yatay kenara snap (sağ veya sol). */
 export function snapAiButtonToHorizontalEdge(
   point: AiButtonPoint,

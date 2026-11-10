@@ -1,5 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
-import { Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { Keyboard, Pressable, StyleSheet, View, type LayoutChangeEvent } from 'react-native';
 import Animated, { useSharedValue } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AiFloatingButton } from './AiFloatingButton';
@@ -7,6 +7,7 @@ import { AiInputBubble } from './AiInputBubble';
 import { AiFloatingChatPanel } from './AiFloatingChatPanel';
 import {
   getDefaultAiButtonPosition,
+  isKeyboardShrink,
   type AiButtonPoint,
   type AiOverlayLayout,
 } from './aiButtonPosition';
@@ -14,6 +15,9 @@ import { useAiKeyboardLift } from './useAiKeyboardLift';
 import { useAiStrings } from '../i18n/AiStringsContext';
 import { useAiChatController } from '../hooks/useAiChat';
 import { absoluteFill } from '../lib/styles';
+
+/** A layout shrink this close before keyboardDidShow is treated as the keyboard resize. */
+const KEYBOARD_RESIZE_WINDOW_MS = 1000;
 
 export interface AiFloatingOverlayProps {
   /** When false, overlay is hidden (host RBAC / prefs). Default true. */
@@ -57,11 +61,44 @@ export function AiFloatingOverlay({
 
   const clusterLiftStyle = useAiKeyboardLift(anchorY, bubbleVisible, overlayLayout?.height ?? null);
 
+  const keyboardShownRef = useRef(false);
+  // Last two measured layouts, to undo a keyboard resize measured just before keyboardDidShow.
+  const layoutsRef = useRef<{
+    current: AiOverlayLayout | null;
+    previous: AiOverlayLayout | null;
+    at: number;
+  }>({ current: null, previous: null, at: 0 });
+
   const handleOverlayLayout = useCallback((event: LayoutChangeEvent) => {
     const { width, height } = event.nativeEvent.layout;
+    const { current } = layoutsRef.current;
+    // Keep laying out against the full height while the keyboard is open: the cluster lift
+    // already subtracts the keyboard, and a shorter overlay would also reset the FAB position.
+    if (isKeyboardShrink(current, { width, height }, keyboardShownRef.current)) return;
+    layoutsRef.current = { previous: current, current: { width, height }, at: Date.now() };
     setOverlayLayout(prev =>
       prev && prev.width === width && prev.height === height ? prev : { width, height }
     );
+  }, []);
+
+  useEffect(() => {
+    const show = Keyboard.addListener('keyboardDidShow', () => {
+      keyboardShownRef.current = true;
+      const { previous, current, at } = layoutsRef.current;
+      if (previous && Date.now() - at < KEYBOARD_RESIZE_WINDOW_MS) {
+        if (isKeyboardShrink(previous, current, true)) {
+          layoutsRef.current = { previous: null, current: previous, at: 0 };
+          setOverlayLayout(previous);
+        }
+      }
+    });
+    const hide = Keyboard.addListener('keyboardDidHide', () => {
+      keyboardShownRef.current = false;
+    });
+    return () => {
+      show.remove();
+      hide.remove();
+    };
   }, []);
 
   const closeBubble = useCallback(() => setBubbleVisible(false), []);
